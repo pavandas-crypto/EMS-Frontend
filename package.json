@@ -13,13 +13,9 @@
     "bootstrap": "^5.3.8",
     "html5-qrcode": "^2.3.8",
     "react": "^19.2.5",
-<<<<<<< HEAD
     "react-bootstrap": "^2.10.10",
-    "react-dom": "^19.2.5"
-=======
     "react-dom": "^19.2.5",
-    "react-router-dom": "^6.x"
->>>>>>> 801602d618d3d4fb0919c55734e125b770c00e7a
+    "react-router-dom": "^6.23.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

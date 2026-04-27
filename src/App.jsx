@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./component/login.jsx";
+import LandingPage from "./component/eventpage/landingpage.jsx";
+import RegisterForm from "./component/eventpage/registerform.jsx";
+import VerifierApp from "./component/verifier/VerifierApp.jsx";
 import AdminLayout from "./component/admin/AdminLayout.jsx";
 import AdminDashboard from "./component/admin/AdminDashboard.jsx";
 import EventCreate from "./component/admin/EventCreate.jsx";
@@ -20,9 +23,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/register" element={<RegisterForm />} />
+        <Route path="/verifier" element={<VerifierApp />} />
 
         {/* Admin Routes - Protected */}
+        <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="events/create" element={<EventCreate />} />
@@ -35,7 +42,7 @@ function App() {
         </Route>
 
         {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
