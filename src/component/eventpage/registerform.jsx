@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function RegisterForm() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -30,8 +32,16 @@ function RegisterForm() {
       <div className="row justify-content-center">
         <div className="col-md-8 col-lg-6">
           <div className="card shadow">
-            <div className="card-header bg-primary text-white">
+            <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
               <h3 className="card-title mb-0">Event Registration</h3>
+              <button
+                type="button"
+                className="btn btn-light btn-sm"
+                onClick={() => navigate('/')}
+              >
+                <i className="fas fa-arrow-left me-1"></i>
+                Back
+              </button>
             </div>
             <div className="card-body">
               <form onSubmit={handleSubmit}>

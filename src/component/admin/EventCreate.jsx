@@ -56,51 +56,112 @@ function EventCreate() {
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1>Create Event</h1>
-          <p className="text-muted">
-            Configure the event details, image, and approval mode for attendee registration.
-          </p>
+      {/* Page Header */}
+      <div className="mb-4">
+        <div className="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 className="h3 fw-bold mb-1">Create New Event</h1>
+            <p className="text-muted">Set up event details, dates, and approval workflow</p>
+          </div>
+          <button onClick={() => navigate("/admin/dashboard")} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left me-2"></i>Back to Dashboard
+          </button>
         </div>
-        <button
-          onClick={() => navigate("/admin/dashboard")}
-          className="btn btn-secondary"
-        >
-          Back to Dashboard
-        </button>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && (
+        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+          <i className="bi bi-exclamation-circle me-2"></i>
+          {error}
+          <button type="button" className="btn-close" onClick={() => setError("")}></button>
+        </div>
+      )}
+      {success && (
+        <div className="alert alert-success alert-dismissible fade show" role="alert">
+          <i className="bi bi-check-circle me-2"></i>
+          {success}
+        </div>
+      )}
 
-      <div className="card shadow">
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label htmlFor="event_name" className="form-label">
+      <form onSubmit={handleSubmit}>
+        {/* Basic Information */}
+        <div className="card border-0 shadow-sm mb-3">
+          <div className="card-header bg-light border-0 py-3">
+            <h5 className="mb-0 fw-bold">
+              <i className="bi bi-info-circle me-2 text-primary"></i>Basic Information
+            </h5>
+          </div>
+          <div className="card-body">
+            <div className="row g-3">
+              <div className="col-12">
+                <label htmlFor="event_name" className="form-label fw-bold">
                   Event Title <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
                   id="event_name"
                   name="event_name"
-                  className="form-control"
+                  className="form-control form-control-lg"
                   value={formData.event_name}
+                  onChange={handleChange}
+                  placeholder="e.g., Tech Conference 2024"
+                  required
+                />
+              </div>
+
+              <div className="col-12">
+                <label htmlFor="description" className="form-label fw-bold">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  className="form-control"
+                  rows="4"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Event description and details..."
+                />
+              </div>
+
+              <div className="col-md-6">
+                <label htmlFor="start_date_time" className="form-label fw-bold">
+                  Start Date & Time <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  id="start_date_time"
+                  name="start_date_time"
+                  className="form-control form-control-lg"
+                  value={formData.start_date_time}
                   onChange={handleChange}
                   required
                 />
               </div>
 
-              <div className="col-md-6 mb-3">
-                <label htmlFor="event_for" className="form-label">
+              <div className="col-md-6">
+                <label htmlFor="end_date_time" className="form-label fw-bold">
+                  End Date & Time <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  id="end_date_time"
+                  name="end_date_time"
+                  className="form-control form-control-lg"
+                  value={formData.end_date_time}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="col-md-6">
+                <label htmlFor="event_for" className="form-label fw-bold">
                   Visible To <span className="text-danger">*</span>
                 </label>
                 <select
                   id="event_for"
                   name="event_for"
-                  className="form-select"
+                  className="form-select form-select-lg"
                   value={formData.event_for}
                   onChange={handleChange}
                   required
@@ -109,137 +170,134 @@ function EventCreate() {
                   <option value="tssia_members">TSSIA Members Only</option>
                 </select>
               </div>
-            </div>
 
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label htmlFor="start_date_time" className="form-label">
-                  Start Date and Time <span className="text-danger">*</span>
+              <div className="col-md-6">
+                <label htmlFor="address" className="form-label fw-bold">
+                  Address
                 </label>
                 <input
-                  type="datetime-local"
-                  id="start_date_time"
-                  name="start_date_time"
-                  className="form-control"
-                  value={formData.start_date_time}
+                  type="text"
+                  id="address"
+                  name="address"
+                  className="form-control form-control-lg"
+                  value={formData.address}
                   onChange={handleChange}
-                  required
+                  placeholder="Event location"
                 />
               </div>
 
-              <div className="col-md-6 mb-3">
-                <label htmlFor="end_date_time" className="form-label">
-                  End Date and Time <span className="text-danger">*</span>
+              <div className="col-12">
+                <label htmlFor="event_image" className="form-label fw-bold">
+                  Event Banner Image
                 </label>
-                <input
-                  type="datetime-local"
-                  id="end_date_time"
-                  name="end_date_time"
-                  className="form-control"
-                  value={formData.end_date_time}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="input-group">
+                  <input
+                    type="file"
+                    id="event_image"
+                    name="event_image"
+                    className="form-control"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+                <small className="text-muted d-block mt-2">
+                  <i className="bi bi-info-circle me-1"></i>
+                  Supported formats: JPG, PNG, GIF, WEBP (Max 5MB)
+                </small>
               </div>
             </div>
-
-            <div className="mb-3">
-              <label htmlFor="address" className="form-label">
-                Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                className="form-control"
-                rows="3"
-                value={formData.address}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="mb-3">
-              <label htmlFor="event_image" className="form-label">
-                Event Image
-              </label>
-              <input
-                type="file"
-                id="event_image"
-                name="event_image"
-                className="form-control"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              <small className="text-muted">
-                Upload a banner image for the event. Allowed: JPG, PNG, GIF, WEBP.
-              </small>
-            </div>
-
-            <hr />
-
-            <h5 className="mb-3">Success Page Settings</h5>
-
-            <div className="mb-3">
-              <label htmlFor="success_title" className="form-label">
-                Success Page Title
-              </label>
-              <input
-                type="text"
-                id="success_title"
-                name="success_title"
-                className="form-control"
-                value={formData.success_title}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="mb-3">
-              <label htmlFor="success_message" className="form-label">
-                Success Page Message
-              </label>
-              <textarea
-                id="success_message"
-                name="success_message"
-                className="form-control"
-                rows="4"
-                value={formData.success_message}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="mb-3 form-check">
-              <input
-                type="checkbox"
-                id="show_approval_notice"
-                name="show_approval_notice"
-                className="form-check-input"
-                checked={formData.show_approval_notice}
-                onChange={handleChange}
-              />
-              <label className="form-check-label" htmlFor="show_approval_notice">
-                Require approval before confirmation
-              </label>
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="approval_message" className="form-label">
-                Approval Notice Message
-              </label>
-              <textarea
-                id="approval_message"
-                name="approval_message"
-                className="form-control"
-                rows="3"
-                value={formData.approval_message}
-                onChange={handleChange}
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary btn-lg w-100">
-              Create Event
-            </button>
-          </form>
+          </div>
         </div>
-      </div>
+
+        {/* Success & Approval Settings */}
+        <div className="card border-0 shadow-sm mb-3">
+          <div className="card-header bg-light border-0 py-3">
+            <h5 className="mb-0 fw-bold">
+              <i className="bi bi-check-circle me-2 text-success"></i>Success & Approval Settings
+            </h5>
+          </div>
+          <div className="card-body">
+            <div className="row g-3">
+              <div className="col-12">
+                <label htmlFor="success_title" className="form-label fw-bold">
+                  Success Page Title
+                </label>
+                <input
+                  type="text"
+                  id="success_title"
+                  name="success_title"
+                  className="form-control form-control-lg"
+                  value={formData.success_title}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="col-12">
+                <label htmlFor="success_message" className="form-label fw-bold">
+                  Success Page Message
+                </label>
+                <textarea
+                  id="success_message"
+                  name="success_message"
+                  className="form-control"
+                  rows="3"
+                  value={formData.success_message}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="col-12">
+                <div className="form-check form-switch">
+                  <input
+                    type="checkbox"
+                    id="show_approval_notice"
+                    name="show_approval_notice"
+                    className="form-check-input"
+                    checked={formData.show_approval_notice}
+                    onChange={handleChange}
+                  />
+                  <label className="form-check-label fw-bold" htmlFor="show_approval_notice">
+                    Require approval before sending confirmation
+                  </label>
+                </div>
+                <small className="text-muted d-block mt-2">
+                  Enable this to manually approve registrations before participants receive confirmation
+                </small>
+              </div>
+
+              {formData.show_approval_notice && (
+                <div className="col-12">
+                  <label htmlFor="approval_message" className="form-label fw-bold">
+                    Approval Notice Message
+                  </label>
+                  <textarea
+                    id="approval_message"
+                    name="approval_message"
+                    className="form-control"
+                    rows="3"
+                    value={formData.approval_message}
+                    onChange={handleChange}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Form Actions */}
+        <div className="d-flex gap-2 justify-content-end">
+          <button
+            type="button"
+            onClick={() => navigate("/admin/dashboard")}
+            className="btn btn-lg btn-outline-secondary"
+          >
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-lg btn-primary">
+            <i className="bi bi-check me-2"></i>Create Event
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
