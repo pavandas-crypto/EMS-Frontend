@@ -1,29 +1,24 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Button, Navbar, Nav, Badge, Tabs, Tab, Accordion } from 'react-bootstrap';
+import React from 'react';
+import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
 
   // Event details
   const eventDetails = {
     title: "Tech Conference 2024",
     subtitle: "Shaping the Future of Technology",
     date: "2024-05-15T09:00:00",
-    location: "Convention Center, Mumbai",
+    location: "Thane Small Scale Industries Association, Mumbai",
     description: "Join industry leaders, innovators, and tech enthusiasts for an immersive experience featuring cutting-edge technologies, networking opportunities, and transformative insights.",
     highlights: [
-      "Keynote speeches by industry leaders",
-      "Hands-on workshops and technical sessions",
-      "Networking opportunities with peers",
-      "Latest technology demonstrations",
-      "Career development workshops"
-    ],
-    speakers: [
-      { name: "Dr. Sarah Johnson", title: "AI Research Director, TechCorp" },
-      { name: "Michael Chen", title: "CTO, InnovateLabs" },
-      { name: "Priya Sharma", title: "VP Engineering, DataFlow" }
+      { icon: "fas fa-microphone", title: "Keynote Speeches", desc: "Industry leaders sharing insights" },
+      { icon: "fas fa-laptop", title: "Technical Workshops", desc: "Hands-on learning sessions" },
+      { icon: "fas fa-handshake", title: "Networking", desc: "Connect with professionals" },
+      { icon: "fas fa-lightbulb", title: "Innovations", desc: "Latest tech demonstrations" },
+      { icon: "fas fa-graduation-cap", title: "Career Dev", desc: "Development workshops" },
+      { icon: "fas fa-star", title: "Exclusive Access", desc: "Premium event features" }
     ]
   };
 
@@ -36,488 +31,398 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="landing-page bg-light">
-      {/* Compact Header */}
-      <Navbar bg="white" variant="light" expand="lg" className="shadow-sm border-bottom">
+    <div className="landing-page" style={{ backgroundColor: '#0a0e27', color: '#ffffff' }}>
+      {/* Navbar */}
+      <nav className="navbar navbar-dark" style={{ backgroundColor: '#0f1835', boxShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
         <Container>
-          <Navbar.Brand className="fw-bold text-primary">
-            <i className="fas fa-calendar-alt me-2"></i>
-            EMS
-          </Navbar.Brand>
+          <div className="navbar-brand d-flex align-items-center gap-2">
+            <img src="/tssia-logo.svg" alt="TSSIA" height="40" />
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold' }}>EMS</div>
+              <div style={{ fontSize: '11px', color: '#888' }}>Event Management</div>
+            </div>
+          </div>
         </Container>
-      </Navbar>
+      </nav>
 
-      {/* Hero Section */}
-      <section className="hero-section bg-dark text-white">
-        <div className="mountain-header-overlay">
-          <div className="parallax-layer mountain-header-layer"></div>
-          <div className="parallax-layer foreground-mountain-header"></div>
-        </div>
+      {/* Hero Section - Compact */}
+      <section style={{ 
+        background: 'linear-gradient(135deg, #0f1835 0%, #1a1f3a 50%, #0a0e27 100%)',
+        padding: '3rem 0',
+        position: 'relative',
+        overflow: 'hidden',
+        borderBottom: '1px solid rgba(59, 130, 246, 0.2)'
+      }}>
+        {/* Animated background elements */}
+        <div style={{
+          position: 'absolute',
+          width: '300px',
+          height: '300px',
+          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
+          borderRadius: '50%',
+          top: '-100px',
+          right: '-100px',
+          animation: 'float 6s ease-in-out infinite'
+        }}></div>
+        <div style={{
+          position: 'absolute',
+          width: '250px',
+          height: '250px',
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 70%)',
+          borderRadius: '50%',
+          bottom: '-80px',
+          left: '-80px',
+          animation: 'float 8s ease-in-out infinite reverse'
+        }}></div>
 
-        <div className="hero-overlay"></div>
-        <Container fluid className="h-100">
-          <Row className="justify-content-center text-center h-100 align-items-center">
-            <Col lg={10}>
-              <div className="hero-content">
-                <Badge bg="primary" className="mb-3 badge-morph">
-                  <i className="fas fa-calendar me-1"></i>
+        <Container style={{ position: 'relative', zIndex: 2 }}>
+          <Row className="align-items-center">
+            <Col lg={7}>
+              <div className="mb-4">
+                <Badge 
+                  bg="primary" 
+                  className="mb-3" 
+                  style={{ 
+                    padding: '0.6rem 1.2rem',
+                    fontSize: '12px',
+                    borderRadius: '50px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <i className="fas fa-calendar"></i>
                   {new Date(eventDetails.date).toLocaleDateString('en-IN', {
-                    weekday: 'long',
-                    month: 'long',
+                    month: 'short',
                     day: 'numeric',
                     year: 'numeric'
                   })}
                 </Badge>
-                <h1 className="display-4 fw-bold mb-3 title-morph">{eventDetails.title}</h1>
-                <h2 className="h4 text-primary mb-4 subtitle-morph">{eventDetails.subtitle}</h2>
-                <p className="lead mb-4 description-morph">{eventDetails.description}</p>
-
-                <div className="location-info mb-4 location-morph">
-                  <i className="fas fa-map-marker-alt me-2 text-primary"></i>
-                  <span className="h5">{eventDetails.location}</span>
-                </div>
-
-                <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center button-container">
-                  <Button
-                    size="lg"
-                    className="px-4 py-3 fw-bold button-primary"
-                    onClick={handleRegister}
-                  >
-                    <i className="fas fa-user-plus me-2"></i>
-                    Register Now
-                  </Button>
-                  <Button
-                    variant="outline-light"
-                    size="lg"
-                    className="px-4 py-3 fw-bold button-secondary"
-                    onClick={handleBecomeMember}
-                  >
-                    <i className="fas fa-crown me-2"></i>
-                    Become a Member
-                  </Button>
-                </div>
+              </div>
+              <h1 style={{ 
+                fontSize: '2.8rem',
+                fontWeight: 'bold',
+                marginBottom: '1rem',
+                lineHeight: 1.2
+              }}>
+                {eventDetails.title}
+              </h1>
+              <h2 style={{ 
+                fontSize: '1.5rem',
+                color: '#3b82f6',
+                marginBottom: '1.5rem',
+                fontWeight: '500'
+              }}>
+                {eventDetails.subtitle}
+              </h2>
+              <p style={{ fontSize: '1.05rem', color: '#d1d5db', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                {eventDetails.description}
+              </p>
+              <div className="d-flex gap-3 flex-wrap">
+                <Button 
+                  size="lg" 
+                  className="px-4 py-2 fw-bold"
+                  style={{ 
+                    background: '#3b82f6',
+                    border: 'none',
+                    fontSize: '1rem',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={handleRegister}
+                >
+                  <i className="fas fa-user-plus me-2"></i>
+                  Register Now
+                </Button>
+                <Button 
+                  size="lg"
+                  className="px-4 py-2 fw-bold"
+                  style={{ 
+                    background: 'transparent',
+                    border: '2px solid #3b82f6',
+                    color: '#3b82f6',
+                    fontSize: '1rem',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onClick={handleBecomeMember}
+                >
+                  <i className="fas fa-crown me-2"></i>
+                  Become Member
+                </Button>
+              </div>
+            </Col>
+            <Col lg={5}>
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                borderRadius: '12px',
+                padding: '2rem',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📍</div>
+                <h4 style={{ marginBottom: '0.5rem' }}>Event Location</h4>
+                <p style={{ color: '#9ca3af', marginBottom: 0 }}>{eventDetails.location}</p>
               </div>
             </Col>
           </Row>
         </Container>
       </section>
 
-      {/* Content Section */}
-      <section className="py-5 bg-white">
+      {/* About Section - Cards */}
+      <section style={{ padding: '4rem 0', background: '#0a0e27', borderBottom: '1px solid rgba(59, 130, 246, 0.1)' }}>
         <Container>
-          <Row className="align-items-center">
-            <Col lg={8}>
-              <Card className="shadow-sm border-0">
-                <Card.Header className="bg-light border-0">
-                  <Tabs activeKey={activeTab} onSelect={(k) => setActiveTab(k)} className="mb-0">
-                    <Tab eventKey="overview" title="Overview">
-                      <Card.Body className="bg-white">
-                        <h4 className="text-dark mb-4">Why Attend?</h4>
-                        <Row>
-                          {eventDetails.highlights.slice(0, 3).map((highlight, index) => (
-                            <Col md={4} key={index} className="mb-4">
-                              <div className="text-center">
-                                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                                     style={{width: '60px', height: '60px'}}>
-                                  <i className="fas fa-check text-primary fa-lg"></i>
-                                </div>
-                                <p className="text-muted mb-0">{highlight}</p>
-                              </div>
-                            </Col>
-                          ))}
-                        </Row>
-                        <Accordion className="mt-4">
-                          <Accordion.Item eventKey="0">
-                            <Accordion.Header className="bg-light">View All Highlights</Accordion.Header>
-                            <Accordion.Body className="bg-white">
-                              <ul className="list-unstyled">
-                                {eventDetails.highlights.map((highlight, index) => (
-                                  <li key={index} className="mb-2">
-                                    <i className="fas fa-check text-success me-2"></i>
-                                    {highlight}
-                                  </li>
-                                ))}
-                              </ul>
-                            </Accordion.Body>
-                          </Accordion.Item>
-                        </Accordion>
-                      </Card.Body>
-                    </Tab>
+          <div className="text-center mb-5">
+            <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Why Attend?</h2>
+            <p style={{ color: '#9ca3af', fontSize: '1.05rem' }}>Discover what makes this event extraordinary</p>
+          </div>
+          
+          <Row className="g-4">
+            {eventDetails.highlights.map((highlight, index) => (
+              <Col md={6} lg={4} key={index}>
+                <Card 
+                  className="h-100" 
+                  style={{
+                    background: 'linear-gradient(135deg, #1a1f3a 0%, #0f1835 100%)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    borderRadius: '12px',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.6)';
+                    e.currentTarget.style.boxShadow = '0 10px 30px rgba(59, 130, 246, 0.15)';
+                    e.currentTarget.style.transform = 'translateY(-5px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.2)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <Card.Body className="text-center">
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 1.5rem',
+                      fontSize: '1.8rem',
+                      color: '#3b82f6'
+                    }}>
+                      <i className={highlight.icon}></i>
+                    </div>
+                    <h5 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>{highlight.title}</h5>
+                    <p style={{ color: '#9ca3af', marginBottom: 0, fontSize: '0.95rem' }}>{highlight.desc}</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Container>
+      </section>
 
-                    <Tab eventKey="speakers" title="Speakers">
-                      <Card.Body className="bg-white">
-                        <h4 className="text-dark mb-4">Featured Speakers</h4>
-                        <Row>
-                          {eventDetails.speakers.map((speaker, index) => (
-                            <Col md={4} key={index} className="mb-4">
-                              <Card className="border-0 shadow-sm bg-light">
-                                <Card.Body className="text-center p-4">
-                                  <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-                                       style={{width: '50px', height: '50px'}}>
-                                    <i className="fas fa-user"></i>
-                                  </div>
-                                  <h6 className="text-dark mb-2">{speaker.name}</h6>
-                                  <small className="text-muted">{speaker.title}</small>
-                                </Card.Body>
-                              </Card>
-                            </Col>
-                          ))}
-                        </Row>
-                      </Card.Body>
-                    </Tab>
+      {/* Venue Section with Dark Map */}
+      <section style={{ padding: '4rem 0', background: 'linear-gradient(135deg, #1a1f3a 0%, #0f1835 100%)', borderBottom: '1px solid rgba(59, 130, 246, 0.1)' }}>
+        <Container>
+          <div className="text-center mb-5">
+            <h2 style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>Event Venue</h2>
+            <p style={{ color: '#9ca3af', fontSize: '1.05rem' }}>Find us at the TSSIA Headquarters</p>
+          </div>
 
-                    <Tab eventKey="venue" title="Venue">
-                      <Card.Body className="bg-white">
-                        <h4 className="text-dark mb-4">Event Venue</h4>
-                        <div className="d-flex align-items-center mb-4">
-                          <i className="fas fa-map-marker-alt text-primary me-3 fs-3"></i>
-                          <div>
-                            <h5 className="text-dark mb-1">{eventDetails.location}</h5>
-                            <p className="text-muted mb-0">Modern convention center with state-of-the-art facilities</p>
-                          </div>
-                        </div>
-                        <Row className="g-3">
-                          <Col md={6}>
-                            <div className="bg-light p-4 rounded text-center">
-                              <i className="fas fa-parking text-primary mb-3 fs-2"></i>
-                              <div className="text-dark fw-bold">Free Parking</div>
-                            </div>
-                          </Col>
-                          <Col md={6}>
-                            <div className="bg-light p-4 rounded text-center">
-                              <i className="fas fa-wifi text-primary mb-3 fs-2"></i>
-                              <div className="text-dark fw-bold">High-Speed WiFi</div>
-                            </div>
-                          </Col>
-                        </Row>
-                      </Card.Body>
-                    </Tab>
-                  </Tabs>
-                </Card.Header>
+          <Row className="g-4 align-items-center">
+            <Col lg={6}>
+              <Card style={{
+                background: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.2)',
+                borderRadius: '12px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  paddingBottom: '75%',
+                  overflow: 'hidden'
+                }}>
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3768.0095167348104!2d72.95020817425797!3d19.194786682034362!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7b905e58b6475%3A0xdd6ba8c1b8b48da7!2sThane%20Small%20Scale%20Industries%20Association!5e0!3m2!1sen!2sin!4v1777372559990!5m2!1sen!2sin"
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                      borderRadius: '12px',
+                      filter: 'invert(0.92) hue-rotate(200deg)'
+                    }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="TSSIA Location"
+                  ></iframe>
+                </div>
               </Card>
             </Col>
 
-            <Col lg={4}>
-              {/* Quick Actions Card */}
-              <Card className="shadow-sm border-0 bg-dark text-white">
-                <Card.Header className="bg-primary text-white border-0">
-                  <h5 className="mb-0">Quick Actions</h5>
-                </Card.Header>
-                <Card.Body className="bg-dark">
-                  <Button variant="light" className="w-100 mb-3 py-3 fw-bold" onClick={handleRegister}>
-                    <i className="fas fa-user-plus me-2"></i>
-                    Register Now
-                  </Button>
-                  <Button variant="outline-light" className="w-100 py-3 fw-bold" onClick={handleBecomeMember}>
-                    <i className="fas fa-crown me-2"></i>
-                    Become a Member
-                  </Button>
-                </Card.Body>
-              </Card>
+            <Col lg={6}>
+              <div style={{ paddingLeft: '2rem' }}>
+                <h3 style={{ marginBottom: '1.5rem', fontSize: '1.5rem' }}>
+                  <i className="fas fa-map-marker-alt me-2" style={{ color: '#3b82f6' }}></i>
+                  Venue Details
+                </h3>
+
+                <Card 
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.05)',
+                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                    borderRadius: '10px',
+                    marginBottom: '1.5rem',
+                    padding: '1.5rem'
+                  }}
+                >
+                  <h5 style={{ marginBottom: '1rem' }}>Thane Small Scale Industries Association</h5>
+                  <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
+                    <i className="fas fa-map-pin me-2" style={{ color: '#3b82f6' }}></i>
+                    Thane, Mumbai, India
+                  </p>
+                  <p style={{ color: '#9ca3af', marginBottom: 0, lineHeight: 1.6 }}>
+                    State-of-the-art venue with modern conference facilities, high-speed WiFi, comfortable seating, and complimentary refreshments.
+                  </p>
+                </Card>
+
+                <Row className="g-3">
+                  <Col md={6}>
+                    <div style={{
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '10px',
+                      padding: '1.5rem',
+                      textAlign: 'center'
+                    }}>
+                      <i className="fas fa-parking" style={{ fontSize: '1.8rem', color: '#3b82f6', marginBottom: '0.5rem', display: 'block' }}></i>
+                      <div style={{ fontSize: '0.95rem', color: '#d1d5db' }}>Free Parking</div>
+                    </div>
+                  </Col>
+                  <Col md={6}>
+                    <div style={{
+                      background: 'rgba(59, 130, 246, 0.1)',
+                      border: '1px solid rgba(59, 130, 246, 0.2)',
+                      borderRadius: '10px',
+                      padding: '1.5rem',
+                      textAlign: 'center'
+                    }}>
+                      <i className="fas fa-wifi" style={{ fontSize: '1.8rem', color: '#3b82f6', marginBottom: '0.5rem', display: 'block' }}></i>
+                      <div style={{ fontSize: '0.95rem', color: '#d1d5db' }}>High-Speed WiFi</div>
+                    </div>
+                  </Col>
+                </Row>
+              </div>
             </Col>
           </Row>
+        </Container>
+      </section>
+
+      {/* CTA Section */}
+      <section style={{ padding: '3rem 0', background: '#0a0e27', textAlign: 'center' }}>
+        <Container>
+          <h2 style={{ marginBottom: '2rem', fontSize: '2rem' }}>Ready to Join Us?</h2>
+          <div className="d-flex gap-3 justify-content-center flex-wrap">
+            <Button 
+              size="lg"
+              style={{ 
+                background: '#3b82f6',
+                border: 'none',
+                padding: '0.75rem 2rem',
+                fontSize: '1rem'
+              }}
+              onClick={handleRegister}
+            >
+              Register Now
+            </Button>
+            <Button 
+              size="lg"
+              style={{ 
+                background: 'transparent',
+                border: '2px solid #3b82f6',
+                color: '#3b82f6',
+                padding: '0.75rem 2rem',
+                fontSize: '1rem'
+              }}
+              onClick={handleBecomeMember}
+            >
+              Learn More
+            </Button>
+          </div>
         </Container>
       </section>
 
       {/* Footer */}
-      <footer className="footer-section bg-dark text-white">
-        <div className="footer-overlay"></div>
-        <Container fluid className="h-100">
-          <Row className="text-center h-100 align-items-center justify-content-center">
-            <Col lg={8}>
-              <div className="footer-content">
-                <div className="mb-4">
-                  <h3 className="text-primary mb-4 footer-title">
-                    <i className="fas fa-calendar-alt me-2"></i>
-                    EMS
-                  </h3>
-                  <p className="text-light mb-4 footer-description">
-                    Event Management System - Making event organization seamless and efficient.
-                  </p>
-                </div>
-                <div className="social-links mb-4">
-                  <a href="#" className="social-link">
-                    <i className="fab fa-facebook"></i>
-                  </a>
-                  <a href="#" className="social-link">
-                    <i className="fab fa-twitter"></i>
-                  </a>
-                  <a href="#" className="social-link">
-                    <i className="fab fa-linkedin"></i>
-                  </a>
-                  <a href="#" className="social-link">
-                    <i className="fab fa-instagram"></i>
-                  </a>
-                </div>
-                <hr className="footer-divider" />
-                <p className="mb-0 text-light footer-copyright">
-                  &copy; 2024 EMS - Event Management System. All rights reserved.
-                  <span className="ms-2">
-                    Powered by <a href="https://tssia.org" className="text-primary text-decoration-none powered-by">TSSIA</a>
-                  </span>
-                </p>
-              </div>
-            </Col>
-          </Row>
-        </Container>
+      <footer style={{ 
+        background: '#0f1835',
+        borderTop: '1px solid rgba(59, 130, 246, 0.1)',
+        padding: '3rem 0',
+        textAlign: 'center'
+      }}>
+        <Container>
+          <div style={{ marginBottom: '2rem' }}>
+            <img src="/tssia-logo.svg" alt="TSSIA" height="50" style={{ marginBottom: '1rem' }} />
+            <h4>EMS - Event Management System</h4>
+            <p style={{ color: '#9ca3af', marginBottom: '1rem' }}>Making event organization seamless and efficient</p>
+          </div>
 
-        <div className="sea-footer-overlay">
-          <div className="parallax-layer sea-footer-layer"></div>
-        </div>
+          <div className="mb-3">
+            <a href="#" style={{ color: '#3b82f6', marginRight: '1rem', textDecoration: 'none' }}>
+              <i className="fab fa-facebook"></i>
+            </a>
+            <a href="#" style={{ color: '#3b82f6', marginRight: '1rem', textDecoration: 'none' }}>
+              <i className="fab fa-twitter"></i>
+            </a>
+            <a href="#" style={{ color: '#3b82f6', marginRight: '1rem', textDecoration: 'none' }}>
+              <i className="fab fa-linkedin"></i>
+            </a>
+            <a href="#" style={{ color: '#3b82f6', textDecoration: 'none' }}>
+              <i className="fab fa-instagram"></i>
+            </a>
+          </div>
+
+          <hr style={{ borderColor: 'rgba(59, 130, 246, 0.1)', margin: '1.5rem 0' }} />
+          <p style={{ color: '#6b7280', marginBottom: 0, fontSize: '0.9rem' }}>
+            © 2024 EMS - Event Management System. All rights reserved. Powered by{' '}
+            <a href="https://tssia.org" style={{ color: '#3b82f6', textDecoration: 'none' }}>TSSIA</a>
+          </p>
+        </Container>
       </footer>
 
-      <style jsx>{`
+      <style>{`
         .landing-page {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          overflow-x: hidden;
-          color: #212529;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
 
-        .hero-section {
-          position: relative;
-          background: linear-gradient(180deg, #111111 0%, #191c20 55%, #0f1013 100%);
-          min-height: 90vh;
-          display: flex;
-          align-items: center;
-          overflow: hidden;
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
         }
 
-        .mountain-header-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 48%;
-          overflow: hidden;
-          z-index: 1;
+        button {
+          transition: all 0.3s ease !important;
         }
 
-        .parallax-layer {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-size: cover;
-          background-position: center;
-          background-repeat: no-repeat;
-        }
-
-        .mountain-header-layer {
-          background-image: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
-          opacity: 0.34;
-        }
-
-        .foreground-mountain-header {
-          background-image: url('https://images.unsplash.com/photo-1464822759844-d150f39b8b26?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
-          opacity: 0.28;
-        }
-
-        .hero-overlay {
-          position: absolute;
-          inset: 0;
-          background: rgba(15, 15, 15, 0.84);
-          z-index: 2;
-        }
-
-        .hero-content {
-          position: relative;
-          z-index: 3;
-        }
-
-        .badge-morph {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          background-color: #0d6efd;
-          color: #ffffff;
-          border-radius: 999px;
-          padding: 0.65rem 1rem;
-          font-weight: 600;
-          border: none;
-        }
-
-        .title-morph {
-          color: #ffffff;
-          letter-spacing: -0.03em;
-        }
-
-        .subtitle-morph {
-          color: #c1c7d0;
-        }
-
-        .description-morph {
-          color: #e9ecef;
-          max-width: 720px;
-          margin: 0 auto 1.5rem;
-        }
-
-        .location-morph {
-          color: #adb5bd;
-        }
-
-        .button-primary {
-          background-color: #0d6efd;
-          border: none;
-          color: #ffffff;
-        }
-
-        .button-primary:hover {
-          background-color: #0b5ed7;
-        }
-
-        .button-secondary {
-          color: #ffffff;
-          border-color: rgba(255, 255, 255, 0.38);
-          background-color: transparent;
-        }
-
-        .button-secondary:hover {
-          background-color: rgba(255, 255, 255, 0.08);
-          color: #ffffff;
-        }
-
-        .footer-section {
-          position: relative;
-          background: #090a0d;
-          padding: 4rem 0;
-          overflow: hidden;
-        }
-
-        .footer-overlay {
-          position: absolute;
-          inset: 0;
-          background: rgba(9, 10, 13, 0.9);
-          z-index: 1;
-        }
-
-        .sea-footer-overlay {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 45%;
-          overflow: hidden;
-          z-index: 1;
-        }
-
-        .sea-footer-layer {
-          position: absolute;
-          inset: 0;
-          background-image: url('https://images.unsplash.com/photo-1505142468610-359e7d316be0?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80');
-          background-size: cover;
-          background-position: center bottom;
-          opacity: 0.28;
-        }
-
-        .footer-content {
-          position: relative;
-          z-index: 2;
-        }
-
-        .footer-title {
-          color: #ffffff;
-        }
-
-        .footer-description {
-          color: #c9d1d9;
-        }
-
-        .social-links {
-          display: flex;
-          justify-content: center;
-          gap: 1.5rem;
-        }
-
-        .social-link {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 50px;
-          height: 50px;
-          color: #adb5bd;
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          border-radius: 50%;
-          transition: border-color 0.25s ease, color 0.25s ease;
-        }
-
-        .social-link:hover {
-          color: #ffffff;
-          border-color: rgba(255, 255, 255, 0.35);
-          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
-          transform: none;
-        }
-
-        .footer-divider {
-          border-color: rgba(255, 255, 255, 0.12);
-          width: 100px;
-          margin: 2rem auto;
-        }
-
-        .footer-copyright {
-          color: #a1a8b3;
-        }
-
-        .powered-by {
-          color: #0d6efd;
-        }
-
-        .powered-by:hover {
-          color: #0b5ed7 !important;
+        button:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3) !important;
         }
 
         .card {
-          border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-          transition: box-shadow 0.25s ease;
-        }
-
-        .card:hover {
-          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease !important;
         }
 
         @media (max-width: 768px) {
-          .hero-section,
-          .footer-section {
-            min-height: auto;
-            padding: 3rem 0;
-          }
-
-          .hero-section .display-4 {
-            font-size: 2rem;
-          }
-
-          .hero-section .lead {
-            font-size: 1rem;
-          }
-
-          .button-container {
-            flex-direction: column;
-          }
-
-          .button-primary,
-          .button-secondary {
-            width: 100%;
-          }
-
-          .social-links {
-            gap: 1rem;
-          }
-
-          .social-link {
-            width: 44px;
-            height: 44px;
-          }
-
-          .mountain-header-overlay,
-          .sea-footer-overlay {
-            display: none;
-          }
-        }
-
-        html {
-          scroll-behavior: smooth;
+          h1 { font-size: 2rem !important; }
+          h2 { font-size: 1.5rem !important; }
+          .d-flex { flex-direction: column !important; }
+          button { width: 100%; }
         }
       `}</style>
     </div>

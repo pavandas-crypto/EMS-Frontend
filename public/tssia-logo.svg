@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <!-- Gear background -->
+  <g fill="#0d47a1">
+    <!-- Gear teeth -->
+    <path d="M 50,20 L 70,20 L 75,10 L 80,20 L 100,20 L 105,40 L 100,45 L 120,50 L 115,70 L 100,75 L 105,95 L 85,100 L 80,120 L 70,115 L 65,135 L 50,130 L 45,150 L 35,145 L 30,165 L 15,160 L 10,140 L 25,135 L 20,115 L 10,110 L 15,90 L 5,85 L 20,70 L 10,60 L 30,50 L 25,30 L 40,25 Z"/>
+  </g>
+  
+  <!-- Industry icons -->
+  <g fill="none" stroke="#0d47a1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Worker 1 (left) -->
+    <circle cx="80" cy="35" r="4"/>
+    <path d="M 80,40 L 80,55 M 75,45 L 85,45 M 75,60 L 82,75 M 85,60 L 80,75"/>
+    
+    <!-- Worker 2 (center) -->
+    <circle cx="150" cy="50" r="4"/>
+    <path d="M 150,55 L 150,70 M 145,60 L 155,60 M 145,75 L 150,85 M 155,75 L 152,85"/>
+    
+    <!-- Worker 3 (right) -->
+    <circle cx="220" cy="40" r="4"/>
+    <path d="M 220,45 L 220,60 M 215,50 L 225,50 M 215,65 L 220,80 M 225,65 L 222,80"/>
+  </g>
+  
+  <!-- V symbol -->
+  <text x="150" y="130" font-size="60" font-weight="bold" text-anchor="middle" fill="#0d47a1">V</text>
+  
+  <!-- Main text -->
+  <text x="200" y="155" font-size="24" font-weight="bold" text-anchor="middle" fill="#0d47a1">TSSIA</text>
+  <text x="200" y="175" font-size="12" text-anchor="middle" fill="#0d47a1">Service to MSME</text>
+</svg>
