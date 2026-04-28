@@ -1,13 +1,28 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    console.log("Login submitted:", { email, password });
-    // Add authentication logic here.
+    setError("");
+
+    // Check admin credentials
+    if (email === "admin@gmail.com" && password === "123456") {
+      // Store admin login state
+      localStorage.setItem("adminToken", "admin_logged_in");
+      localStorage.setItem("userRole", "admin");
+      localStorage.setItem("userEmail", email);
+
+      // Redirect to admin dashboard
+      navigate("/admin/dashboard");
+    } else {
+      setError("Invalid email or password. Please try again.");
+    }
   };
 
   return (
@@ -17,6 +32,12 @@ function Login() {
           <h2 className="fw-bold">EMS Sign In</h2>
           <p className="text-muted mb-0">Access your employee management account</p>
         </div>
+
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
@@ -67,7 +88,7 @@ function Login() {
         </form>
 
         <div className="text-center mt-4 text-muted small">
-          New to EMS? <a href="#" className="text-decoration-none">Create an account</a>
+          <strong>Admin Login:</strong> admin@gmail.com / 123456
         </div>
       </div>
     </div>
