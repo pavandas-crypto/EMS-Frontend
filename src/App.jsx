@@ -12,6 +12,7 @@ import Verifiers from "./component/admin/Verifiers.jsx";
 import LandingPage from "./component/eventpage/landingpage.jsx";
 import RegisterForm from "./component/eventpage/registerform.jsx";
 import VerifierApp from "./component/verifier/VerifierApp.jsx";
+
 // Protected Route Component
 function ProtectedRoute({ children }) {
   const isAuthenticated = localStorage.getItem("adminToken") === "admin_logged_in";
@@ -48,3 +49,4 @@ function App() {
 }
 
 export default App;
+
