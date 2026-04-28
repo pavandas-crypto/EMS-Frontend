@@ -16,14 +16,7 @@
     "react": "^19.2.5",
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.5",
-<<<<<<< HEAD
     "react-router-dom": "^6.23.1"
-=======
-    "react-router-dom": "^6.x"
-<<<<<<< HEAD
-=======
->>>>>>> main
->>>>>>> 801f76918e360e13599da7aa11f8a09cfe6a04fd
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
