@@ -1,8 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./component/login.jsx";
-import LandingPage from "./component/eventpage/landingpage.jsx";
-import RegisterForm from "./component/eventpage/registerform.jsx";
-import VerifierApp from "./component/verifier/VerifierApp.jsx";
 import AdminLayout from "./component/admin/AdminLayout.jsx";
 import AdminDashboard from "./component/admin/AdminDashboard.jsx";
 import EventCreate from "./component/admin/EventCreate.jsx";
@@ -12,6 +9,9 @@ import EventForm from "./component/admin/EventForm.jsx";
 import Registrations from "./component/admin/Registrations.jsx";
 import GenerateTickets from "./component/admin/GenerateTickets.jsx";
 import Verifiers from "./component/admin/Verifiers.jsx";
+import LandingPage from "./component/eventpage/landingpage.jsx";
+import RegisterForm from "./component/eventpage/registerform.jsx";
+import VerifierApp from "./component/verifier/VerifierApp.jsx";
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -49,3 +49,4 @@ function App() {
 }
 
 export default App;
+

@@ -1,4 +1,3 @@
-n
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Button, Navbar, Nav, Badge, Tabs, Tab, Accordion } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
