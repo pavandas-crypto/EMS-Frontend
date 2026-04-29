@@ -1,11 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./component/login.jsx";
-<<<<<<< HEAD
 import LandingPage from "./component/eventpage/landingpage.jsx";
 import RegisterForm from "./component/eventpage/registerform.jsx";
 import VerifierApp from "./component/verifier/VerifierApp.jsx";
-=======
->>>>>>> bd3ecd01897013e5dcc9f19f9d520f74c0a395c4
 import AdminLayout from "./component/admin/AdminLayout.jsx";
 import AdminDashboard from "./component/admin/AdminDashboard.jsx";
 import EventCreate from "./component/admin/EventCreate.jsx";
@@ -15,12 +12,7 @@ import EventForm from "./component/admin/EventForm.jsx";
 import Registrations from "./component/admin/Registrations.jsx";
 import GenerateTickets from "./component/admin/GenerateTickets.jsx";
 import Verifiers from "./component/admin/Verifiers.jsx";
-<<<<<<< HEAD
-=======
-import LandingPage from "./component/eventpage/landingpage.jsx";
-import RegisterForm from "./component/eventpage/registerform.jsx";
-import VerifierApp from "./component/verifier/VerifierApp.jsx";
->>>>>>> bd3ecd01897013e5dcc9f19f9d520f74c0a395c4
+
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
