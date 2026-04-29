@@ -27,14 +27,19 @@ function AdminLayout() {
     <div className="d-flex" style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
       <nav
-        className="bg-gradient text-white p-0 position-fixed position-md-relative"
+        className="bg-gradient text-white p-0 position-fixed"
         style={{
           width: sidebarOpen ? "280px" : "0",
+          minWidth: sidebarOpen ? "280px" : "0",
           minHeight: "100vh",
           transition: "width 0.3s ease",
           zIndex: 1050,
+          top: 0,
+          left: 0,
+          position: "fixed",
           background: "linear-gradient(180deg, #2c3e50 0%, #34495e 100%)",
           overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
         {/* Sidebar Header */}
@@ -59,7 +64,7 @@ function AdminLayout() {
           </div>
 
           {userEmail && (
-            <div className="bg-dark bg-opacity-50 p-2 rounded-2">
+            <div className="bg-dark p-2 rounded-2">
               <small className="text-muted d-block">Logged in as:</small>
               <strong className="text-truncate d-block">{userEmail}</strong>
             </div>
@@ -143,7 +148,7 @@ function AdminLayout() {
       </nav>
 
       {/* Main Content */}
-      <div style={{ flex: 1, marginLeft: sidebarOpen ? "0" : "-280px" }} className="w-100">
+      <div style={{ flex: 1, marginLeft: sidebarOpen ? "280px" : "0" }} className="w-100 admin-main-content">
         {/* Top Header */}
         <header className="bg-white border-bottom shadow-sm sticky-top">
           <div className="container-fluid px-3 px-md-4 py-2">
@@ -191,13 +196,19 @@ function AdminLayout() {
           transition: all 0.2s ease;
         }
         .hover-link:hover {
-          background-color: rgba(255, 255, 255, 0.1) !important;
+          background-color: rgba(255, 255, 255, 0.08) !important;
           transform: translateX(5px);
         }
         nav {
           box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
         }
+        .admin-main-content {
+          transition: margin-left 0.3s ease;
+        }
         @media (max-width: 768px) {
+          .admin-main-content {
+            margin-left: 0 !important;
+          }
           nav {
             box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
           }
