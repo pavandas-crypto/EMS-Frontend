@@ -1,29 +1,8 @@
-import { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 
 function AdminLayout() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [userEmail, setUserEmail] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  useEffect(() => {
-    const email = localStorage.getItem("userEmail");
-    if (email) {
-      setUserEmail(email);
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userEmail");
-    navigate("/login");
-  };
-
-  const isActive = (path) => location.pathname.includes(path);
-
   return (
+<<<<<<< HEAD
     <div className="d-flex" style={{ minHeight: "100vh" }}>
       {/* Sidebar */}
       <nav
@@ -69,151 +48,74 @@ function AdminLayout() {
               <strong className="text-truncate d-block">{userEmail}</strong>
             </div>
           )}
+=======
+    <div className="admin-shell">
+      <aside className="admin-sidebar">
+        <div className="brand">
+          <div className="brand-icon">E</div>
+          <div>
+            <div style={{ fontWeight: 700 }}>EMS Admin</div>
+            <p className="form-note">Design system dashboard</p>
+          </div>
+
         </div>
 
-        {/* Navigation Menu */}
-        <ul className="nav flex-column gap-1 p-3">
-          <li className="nav-item">
-            <Link
-              to="/admin/dashboard"
-              className={`nav-link px-3 py-2 rounded-2 transition ${
-                isActive("dashboard") ? "bg-primary text-white" : "text-white-50 hover-link"
-              }`}
-              style={{ transition: "all 0.2s ease" }}
-            >
-              <i className="bi bi-house me-2"></i>Dashboard
+        <div className="nav-label">Navigation</div>
+        <ul className="nav-list">
+          <li>
+            <Link className="nav-link" to="dashboard">
+              Dashboard
             </Link>
           </li>
-          <li className="nav-item">
-            <Link
-              to="/admin/events/create"
-              className={`nav-link px-3 py-2 rounded-2 transition ${
-                isActive("create") ? "bg-primary text-white" : "text-white-50 hover-link"
-              }`}
-            >
-              <i className="bi bi-plus-circle me-2"></i>Create Event
+          <li>
+            <Link className="nav-link" to="events/create">
+              Create event
             </Link>
           </li>
-          <li className="nav-item">
-            <Link
-              to="/admin/events/manage"
-              className={`nav-link px-3 py-2 rounded-2 transition ${
-                isActive("manage") ? "bg-primary text-white" : "text-white-50 hover-link"
-              }`}
-            >
-              <i className="bi bi-calendar-event me-2"></i>Manage Events
+          <li>
+            <Link className="nav-link" to="events/manage">
+              Manage events
             </Link>
           </li>
-          <li className="nav-item">
-            <Link
-              to="/admin/registrations"
-              className={`nav-link px-3 py-2 rounded-2 transition ${
-                isActive("registrations") ? "bg-primary text-white" : "text-white-50 hover-link"
-              }`}
-            >
-              <i className="bi bi-person-check me-2"></i>Approve Registrations
+          <li>
+            <Link className="nav-link" to="registrations">
+              Registrations
             </Link>
           </li>
-          <li className="nav-item">
-            <Link
-              to="/admin/tickets"
-              className={`nav-link px-3 py-2 rounded-2 transition ${
-                isActive("tickets") ? "bg-primary text-white" : "text-white-50 hover-link"
-              }`}
-            >
-              <i className="bi bi-ticket-perforated me-2"></i>Generate Tickets
+          <li>
+            <Link className="nav-link" to="tickets">
+              Generate tickets
             </Link>
           </li>
-          <li className="nav-item">
-            <Link
-              to="/admin/verifiers"
-              className={`nav-link px-3 py-2 rounded-2 transition ${
-                isActive("verifiers") ? "bg-primary text-white" : "text-white-50 hover-link"
-              }`}
-            >
-              <i className="bi bi-shield-check me-2"></i>Manage Verifiers
+          <li>
+            <Link className="nav-link" to="verifiers">
+              Verifiers
             </Link>
           </li>
         </ul>
 
-        {/* Sidebar Footer */}
-        <div className="p-3 border-top border-secondary mt-auto">
-          <button
-            onClick={handleLogout}
-            className="btn btn-outline-danger w-100 btn-sm"
-          >
-            <i className="bi bi-box-arrow-right me-2"></i>Logout
-          </button>
+        <div style={{ marginTop: "2rem" }}>
+          <a href="/login" className="button button-outline button-sm" style={{ width: "100%" }}>
+            Logout
+          </a>
         </div>
-      </nav>
+      </aside>
 
-      {/* Main Content */}
-      <div style={{ flex: 1, marginLeft: sidebarOpen ? "280px" : "0" }} className="w-100 admin-main-content">
-        {/* Top Header */}
-        <header className="bg-white border-bottom shadow-sm sticky-top">
-          <div className="container-fluid px-3 px-md-4 py-2">
-            <div className="d-flex justify-content-between align-items-center">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="btn btn-light d-md-none"
-              >
-                <i className="bi bi-list"></i>
-              </button>
-              <h6 className="mb-0 flex-grow-1 ms-2 ms-md-0">Event Management System</h6>
-              <div className="dropdown">
-                <button
-                  className="btn btn-sm btn-outline-secondary dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                >
-                  <i className="bi bi-person-circle me-1"></i>Profile
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end">
-                  <li>
-                    <button
-                      onClick={handleLogout}
-                      className="dropdown-item text-danger"
-                    >
-                      <i className="bi bi-box-arrow-right me-2"></i>Logout
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
+      <main className="admin-main">
+        <header className="admin-header">
+          <div>
+            <p className="panel-label">Admin console</p>
+            <h1 className="page-title">Event management</h1>
+          </div>
+          <div className="admin-tools">
+            <a href="/" className="button button-outline button-sm">
+              View public site
+            </a>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="p-3 p-md-4">
-          <div className="container-fluid">
-            <Outlet />
-          </div>
-        </main>
-      </div>
-
-      <style>{`
-        .hover-link {
-          transition: all 0.2s ease;
-        }
-        .hover-link:hover {
-          background-color: rgba(255, 255, 255, 0.08) !important;
-          transform: translateX(5px);
-        }
-        nav {
-          box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .admin-main-content {
-          transition: margin-left 0.3s ease;
-        }
-        @media (max-width: 768px) {
-          .admin-main-content {
-            margin-left: 0 !important;
-          }
-          nav {
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
-          }
-        }
-      `}</style>
+        <Outlet />
+      </main>
     </div>
   );
 }

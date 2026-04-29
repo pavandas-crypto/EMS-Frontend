@@ -1,242 +1,144 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 
 function EventEdit() {
-  const { eventId } = useParams();
-  const navigate = useNavigate();
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
-    event_name: "Tech Conference 2024",
-    description: "",
-    start_date_time: "2024-05-15T09:00",
-    end_date_time: "2024-05-15T17:00",
-    address: "San Francisco, CA",
-    event_for: "all",
-    event_image: null,
-    success_title: "Registration Successful 🎉",
-    success_message: "You have successfully registered for the event.",
-    show_approval_notice: false,
-    approval_message: "Your registration is under review. Please wait for approval confirmation via email.",
+    title: "Community Impact Gala",
+    description: "An evening of learning and celebration focused on partnership and impact.",
+    startDate: "2025-05-10T17:00",
+    endDate: "2025-05-10T20:00",
+    location: "City Conference Hall",
   });
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [errors, setErrors] = useState({});
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setStatus({ type: "", message: "" });
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleFileChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      event_image: e.target.files[0],
-    }));
-  };
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const nextErrors = {};
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError("");
+    if (!formData.title.trim()) nextErrors.title = "Event title is required.";
+    if (!formData.description.trim()) nextErrors.description = "Event description is required.";
+    if (!formData.startDate) nextErrors.startDate = "Start date and time are required.";
+    if (!formData.endDate) nextErrors.endDate = "End date and time are required.";
+    if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
+      nextErrors.endDate = "End time must be later than start time.";
+    }
+    if (!formData.location.trim()) nextErrors.location = "Event location is required.";
 
-    if (!formData.event_name || !formData.start_date_time || !formData.end_date_time) {
-      setError("Event title, start date/time, and end date/time are required.");
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setStatus({ type: "error", message: "Please fix the highlighted fields before saving." });
       return;
     }
 
-    if (new Date(formData.start_date_time) >= new Date(formData.end_date_time)) {
-      setError("End date/time must be later than start date/time.");
-      return;
-    }
-
-    setSuccess("Event updated successfully! Redirecting...");
-    setTimeout(() => {
-      navigate("/admin/dashboard");
-    }, 1500);
+    setStatus({ type: "success", message: "Changes are valid. Event editing is presented as UI validation only." });
   };
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1>Edit Event</h1>
-          <p className="text-muted">
-            Update the event details and registration success settings.
-          </p>
+    <div className="page-shell">
+      <div className="card" style={{ maxWidth: "760px", margin: "0 auto" }}>
+        <div className="card-header panel-header">
+          <div>
+            <p className="panel-label">Event editing</p>
+            <h1 className="page-title">Edit event details</h1>
+          </div>
         </div>
-        <button
-          onClick={() => navigate("/admin/dashboard")}
-          className="btn btn-secondary"
-        >
-          Back to Dashboard
-        </button>
-      </div>
-
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
-
-      <div className="card shadow">
         <div className="card-body">
+          <p className="panel-copy">Update event fields and validate your changes. All modifications remain client-side only.</p>
+
+          {status.message && (
+            <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
+              {status.message}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label htmlFor="event_name" className="form-label">
-                  Event Title <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="event_name"
-                  name="event_name"
-                  className="form-control"
-                  value={formData.event_name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label htmlFor="event_for" className="form-label">
-                  Visible To <span className="text-danger">*</span>
-                </label>
-                <select
-                  id="event_for"
-                  name="event_for"
-                  className="form-select"
-                  value={formData.event_for}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="all">All Participants</option>
-                  <option value="tssia_members">TSSIA Members Only</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <label htmlFor="start_date_time" className="form-label">
-                  Start Date and Time <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  id="start_date_time"
-                  name="start_date_time"
-                  className="form-control"
-                  value={formData.start_date_time}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="col-md-6 mb-3">
-                <label htmlFor="end_date_time" className="form-label">
-                  End Date and Time <span className="text-danger">*</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  id="end_date_time"
-                  name="end_date_time"
-                  className="form-control"
-                  value={formData.end_date_time}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="mb-3">
-              <label htmlFor="address" className="form-label">
-                Address
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                className="form-control"
-                rows="3"
-                value={formData.address}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="mb-3">
-              <label htmlFor="event_image" className="form-label">
-                Event Image
+            <div className="form-group">
+              <label htmlFor="title" className="form-label">
+                Event title
               </label>
               <input
-                type="file"
-                id="event_image"
-                name="event_image"
-                className="form-control"
-                accept="image/*"
-                onChange={handleFileChange}
-              />
-              <small className="text-muted">
-                Upload a new banner image to replace the current one.
-              </small>
-            </div>
-
-            <hr />
-
-            <h5 className="mb-3">Success / Approval Settings</h5>
-
-            <div className="mb-3">
-              <label htmlFor="success_title" className="form-label">
-                Success Page Title
-              </label>
-              <input
-                type="text"
-                id="success_title"
-                name="success_title"
-                className="form-control"
-                value={formData.success_title}
+                id="title"
+                name="title"
+                value={formData.title}
                 onChange={handleChange}
+                className={`input-field ${errors.title ? "input-error" : ""}`}
+                placeholder="Enter event title"
               />
+              {errors.title && <div className="field-error">{errors.title}</div>}
             </div>
 
-            <div className="mb-3">
-              <label htmlFor="success_message" className="form-label">
-                Success Page Message
+            <div className="form-group">
+              <label htmlFor="description" className="form-label">
+                Description
               </label>
               <textarea
-                id="success_message"
-                name="success_message"
-                className="form-control"
+                id="description"
+                name="description"
                 rows="4"
-                value={formData.success_message}
+                value={formData.description}
                 onChange={handleChange}
+                className={`textarea-field ${errors.description ? "input-error" : ""}`}
               />
+              {errors.description && <div className="field-error">{errors.description}</div>}
             </div>
 
-            <div className="mb-3 form-check">
+            <div className="section-grid columns-2">
+              <div className="form-group">
+                <label htmlFor="startDate" className="form-label">
+                  Start date & time
+                </label>
+                <input
+                  id="startDate"
+                  name="startDate"
+                  type="datetime-local"
+                  value={formData.startDate}
+                  onChange={handleChange}
+                  className={`input-field ${errors.startDate ? "input-error" : ""}`}
+                />
+                {errors.startDate && <div className="field-error">{errors.startDate}</div>}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="endDate" className="form-label">
+                  End date & time
+                </label>
+                <input
+                  id="endDate"
+                  name="endDate"
+                  type="datetime-local"
+                  value={formData.endDate}
+                  onChange={handleChange}
+                  className={`input-field ${errors.endDate ? "input-error" : ""}`}
+                />
+                {errors.endDate && <div className="field-error">{errors.endDate}</div>}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="location" className="form-label">
+                Location
+              </label>
               <input
-                type="checkbox"
-                id="show_approval_notice"
-                name="show_approval_notice"
-                className="form-check-input"
-                checked={formData.show_approval_notice}
+                id="location"
+                name="location"
+                value={formData.location}
                 onChange={handleChange}
+                className={`input-field ${errors.location ? "input-error" : ""}`}
+                placeholder="Enter venue or online link"
               />
-              <label className="form-check-label" htmlFor="show_approval_notice">
-                Require approval before registration is confirmed
-              </label>
+              {errors.location && <div className="field-error">{errors.location}</div>}
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="approval_message" className="form-label">
-                Approval Notice Message
-              </label>
-              <textarea
-                id="approval_message"
-                name="approval_message"
-                className="form-control"
-                rows="3"
-                value={formData.approval_message}
-                onChange={handleChange}
-              />
-            </div>
-
-            <button type="submit" className="btn btn-primary btn-lg w-100">
-              Update Event
+            <button type="submit" className="button button-primary">
+              Validate changes
             </button>
           </form>
         </div>
