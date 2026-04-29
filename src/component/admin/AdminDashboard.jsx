@@ -21,75 +21,91 @@ function AdminDashboard() {
     },
   ]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortColumn, setSortColumn] = useState("event_name");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const rowsPerPage = 10;
+  
+  const sortedEvents = [...events].sort((a, b) => {
+    let aValue = a[sortColumn];
+    let bValue = b[sortColumn];
+    
+    if (typeof aValue === "string") {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+    }
+    
+    if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+  
+  const totalPages = Math.max(1, Math.ceil(sortedEvents.length / rowsPerPage));
+  const recentEvents = sortedEvents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortOrder("asc");
+    }
+  };
+  
+  const getSortIcon = (column) => {
+    if (sortColumn !== column) return "↕️";
+    return sortOrder === "asc" ? "↑" : "↓";
+  };
+
   const [eventCount] = useState(events.length);
   const totalRegistrations = events.reduce((sum, e) => sum + e.total_registrations, 0);
 
   const stats = [
     {
-      icon: "📊",
+      icon: (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 18v-8" />
+          <path d="M10 18v-4" />
+          <path d="M16 18v-10" />
+          <path d="M22 18v-6" />
+          <path d="M2 18h20" />
+        </svg>
+      ),
       label: "Total Events",
       value: eventCount,
-      color: "primary",
-      bg: "bg-primary bg-opacity-10",
     },
     {
-      icon: "👥",
-      label: "Total Registrations",
+      icon: (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+      label: "Total Reg",
       value: totalRegistrations,
-      color: "success",
-      bg: "bg-success bg-opacity-10",
     },
     {
-      icon: "✅",
+      icon: (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      ),
       label: "Approved",
       value: 85,
-      color: "info",
-      bg: "bg-info bg-opacity-10",
     },
     {
-      icon: "⏳",
+      icon: (
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2h12" />
+          <path d="M6 22h12" />
+          <path d="M8 2h8v6l-4 4-4-4V2z" />
+          <path d="M16 16h-8v4h8v-4z" />
+        </svg>
+      ),
       label: "Pending",
       value: 60,
-      color: "warning",
-      bg: "bg-warning bg-opacity-10",
-    },
-  ];
-
-  const actionCards = [
-    {
-      title: "Create Event",
-      description: "Create a new event with details, dates, location, and approval mode.",
-      icon: "plus-circle",
-      link: "/admin/events/create",
-      color: "primary",
-    },
-    {
-      title: "Manage Events",
-      description: "View, edit, and manage all your events and their configurations.",
-      icon: "calendar-event",
-      link: "/admin/events/manage",
-      color: "info",
-    },
-    {
-      title: "Approve Registrations",
-      description: "Review and approve participant registrations for events.",
-      icon: "person-check",
-      link: "/admin/registrations",
-      color: "success",
-    },
-    {
-      title: "Generate Tickets",
-      description: "Create and bulk generate tickets for approved participants.",
-      icon: "ticket-perforated",
-      link: "/admin/tickets",
-      color: "warning",
-    },
-    {
-      title: "Manage Verifiers",
-      description: "Create verifier accounts and assign them to events.",
-      icon: "shield-check",
-      link: "/admin/verifiers",
-      color: "danger",
     },
   ];
 
@@ -102,44 +118,18 @@ function AdminDashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="row g-3 mb-4">
+      <div className="bw-stats-grid mb-4">
         {stats.map((stat, idx) => (
-          <div key={idx} className="col-6 col-md-3">
-            <div className={`card border-0 shadow-sm ${stat.bg}`}>
-              <div className="card-body p-3">
-                <div className="d-flex justify-content-between align-items-start">
-                  <div>
-                    <p className="text-muted small mb-1">{stat.label}</p>
-                    <h3 className="mb-0 fw-bold text-dark">{stat.value}</h3>
-                  </div>
-                  <div style={{ fontSize: "28px" }}>{stat.icon}</div>
+          <div key={idx} className="bw-stat-card">
+            <div className="card-body p-4">
+              <div className="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <p className="text-uppercase text-muted small mb-2">{stat.label}</p>
+                  <h3 className="mb-0 bw-stat-value">{stat.value}</h3>
                 </div>
+                <div className="bw-stat-icon">{stat.icon}</div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Action Cards */}
-      <div className="row g-3 mb-4">
-        {actionCards.map((action, idx) => (
-          <div key={idx} className="col-md-6 col-lg-4">
-            <Link to={action.link} className="text-decoration-none">
-              <div className="card border-0 shadow-sm h-100 hover-card">
-                <div className={`card-header bg-${action.color} bg-opacity-10 border-0 py-3`}>
-                  <i className={`bi bi-${action.icon} text-${action.color} me-2`}></i>
-                  <strong className="text-dark">{action.title}</strong>
-                </div>
-                <div className="card-body">
-                  <p className="card-text text-muted small mb-0">{action.description}</p>
-                </div>
-                <div className="card-footer bg-transparent border-top-0 py-2">
-                  <span className={`text-${action.color} small fw-bold`}>
-                    Go to {action.title} <i className="bi bi-arrow-right ms-1"></i>
-                  </span>
-                </div>
-              </div>
-            </Link>
           </div>
         ))}
       </div>
@@ -165,75 +155,115 @@ function AdminDashboard() {
               No events have been created yet. Create your first event to get started.
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead className="bg-light">
-                  <tr>
-                    <th className="py-3">Event Name</th>
-                    <th className="py-3">Date & Time</th>
-                    <th className="py-3 text-center">Registrations</th>
-                    <th className="py-3 text-center">Status</th>
-                    <th className="py-3 text-end">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {events.map((event) => (
-                    <tr key={event.event_id} className="align-middle">
-                      <td className="fw-bold">{event.event_name}</td>
-                      <td>
-                        <small>
-                          <strong>Start:</strong> {new Date(event.start_date_time).toLocaleString()}
-                          <br />
-                          <strong>End:</strong> {new Date(event.end_date_time).toLocaleString()}
-                        </small>
-                      </td>
-                      <td className="text-center">
-                        <span className="badge bg-secondary">{event.total_registrations}</span>
-                      </td>
-                      <td className="text-center">
-                        <span
-                          className={`badge bg-${event.status === "active" ? "success" : "warning"}`}
-                        >
-                          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="text-end">
-                        <div className="btn-group btn-group-sm" role="group">
-                          <Link
-                            to={`/admin/events/edit/${event.event_id}`}
-                            className="btn btn-outline-primary"
-                            title="Edit"
-                          >
-                            <i className="bi bi-pencil"></i>
-                          </Link>
-                          <Link
-                            to={`/admin/events/${event.event_id}/form`}
-                            className="btn btn-outline-info"
-                            title="Form"
-                          >
-                            <i className="bi bi-file-text"></i>
-                          </Link>
-                          <Link
-                            to={`/admin/registrations?event_id=${event.event_id}`}
-                            className="btn btn-outline-success"
-                            title="Registrations"
-                          >
-                            <i className="bi bi-people"></i>
-                          </Link>
-                          <Link
-                            to={`/admin/tickets?event_id=${event.event_id}`}
-                            className="btn btn-outline-warning"
-                            title="Tickets"
-                          >
-                            <i className="bi bi-ticket"></i>
-                          </Link>
-                        </div>
-                      </td>
+            <>
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="bg-light">
+                    <tr>
+                      <th className="py-3" style={{ cursor: "pointer" }} onClick={() => handleSort("event_name")}>
+                        Event Name <span style={{ opacity: 0.6 }}>{getSortIcon("event_name")}</span>
+                      </th>
+                      <th className="py-3" style={{ cursor: "pointer" }} onClick={() => handleSort("start_date_time")}>
+                        Date & Time <span style={{ opacity: 0.6 }}>{getSortIcon("start_date_time")}</span>
+                      </th>
+                      <th className="py-3 text-center" style={{ cursor: "pointer" }} onClick={() => handleSort("total_registrations")}>
+                        Registrations <span style={{ opacity: 0.6 }}>{getSortIcon("total_registrations")}</span>
+                      </th>
+                      <th className="py-3 text-center" style={{ cursor: "pointer" }} onClick={() => handleSort("status")}>
+                        Status <span style={{ opacity: 0.6 }}>{getSortIcon("status")}</span>
+                      </th>
+                      <th className="py-3 text-end">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {sortedEvents.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="text-center py-4 text-muted">No events to display</td>
+                      </tr>
+                    ) : (
+                    recentEvents.map((event) => (
+                      <tr key={event.event_id} className="align-middle">
+                        <td className="fw-bold">{event.event_name}</td>
+                        <td>
+                          <small>
+                            <strong>Start:</strong> {new Date(event.start_date_time).toLocaleString()}
+                            <br />
+                            <strong>End:</strong> {new Date(event.end_date_time).toLocaleString()}
+                          </small>
+                        </td>
+                        <td className="text-center">
+                          <span className="badge bg-secondary">{event.total_registrations}</span>
+                        </td>
+                        <td className="text-center">
+                          <span
+                            className={`badge bg-${event.status === "active" ? "success" : "warning"}`}
+                          >
+                            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="text-end">
+                          <div className="btn-group btn-group-sm" role="group">
+                            <Link
+                              to={`/admin/events/edit/${event.event_id}`}
+                              className="btn btn-outline-primary"
+                              title="Edit"
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </Link>
+                            <Link
+                              to={`/admin/events/${event.event_id}/form`}
+                              className="btn btn-outline-info"
+                              title="Form"
+                            >
+                              <i className="bi bi-file-text"></i>
+                            </Link>
+                            <Link
+                              to={`/admin/registrations?event_id=${event.event_id}`}
+                              className="btn btn-outline-success"
+                              title="Registrations"
+                            >
+                              <i className="bi bi-people"></i>
+                            </Link>
+                            <Link
+                              to={`/admin/tickets?event_id=${event.event_id}`}
+                              className="btn btn-outline-warning"
+                              title="Tickets"
+                            >
+                              <i className="bi bi-ticket"></i>
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="d-flex align-items-center justify-content-between p-3 border-top">
+                <div className="text-muted">
+                  Showing {recentEvents.length} of {sortedEvents.length} events
+                </div>
+                <div className="btn-group" role="group">
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    disabled={totalPages <= 1 || currentPage === 1}
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    disabled={totalPages <= 1 || currentPage === totalPages}
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>

@@ -30,6 +30,21 @@ function App() {
           <Route path="registrations" element={<Registrations />} />
           <Route path="tickets" element={<GenerateTickets />} />
           <Route path="verifiers" element={<Verifiers />} />
+          <Route
+            path="reports"
+            element={
+              <div className="page-shell">
+                <div className="card">
+                  <div className="card-header">
+                    <h1 className="card-title">Reports</h1>
+                  </div>
+                  <div className="card-body">
+                    <p className="card-copy">Reports are coming soon. This page is reserved for analytics and export views.</p>
+                  </div>
+                </div>
+              </div>
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
