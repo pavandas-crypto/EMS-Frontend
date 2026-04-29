@@ -1,109 +1,112 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+
+const verifiers = [
+  { name: "Ritu Singh", role: "Lead verifier" },
+  { name: "Deepak Joshi", role: "Event support" },
+  { name: "Smita Das", role: "Venue compliance" },
+];
 
 function Verifiers() {
-  const navigate = useNavigate();
-  const [verifiers] = useState([
-    {
-      verifier_id: 1,
-      name: "Alice Johnson",
-      email: "alice@example.com",
-      event: "Tech Conference 2024",
-    },
-    {
-      verifier_id: 2,
-      name: "Bob Williams",
-      email: "bob@example.com",
-      event: "Networking Breakfast",
-    },
-  ]);
+  const [formData, setFormData] = useState({ name: "", email: "" });
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [errors, setErrors] = useState({});
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setStatus({ type: "", message: "" });
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const nextErrors = {};
+
+    if (!formData.name.trim()) nextErrors.name = "Verifier name is required.";
+    if (!formData.email.trim()) nextErrors.email = "Verifier email is required.";
+    else if (!emailRegex.test(formData.email)) nextErrors.email = "Enter a valid email address.";
+
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setStatus({ type: "error", message: "Please fix the highlighted fields." });
+      return;
+    }
+
+    setStatus({ type: "success", message: "Verifier details are valid. This remains a preview screen." });
+  };
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1>Manage Verifiers</h1>
-          <p className="text-muted">Create verifiers, assign them to events, and manage their access.</p>
-        </div>
-        <button
-          onClick={() => navigate("/admin/dashboard")}
-          className="btn btn-secondary"
-        >
-          Back to Dashboard
-        </button>
-      </div>
+    <div className="page-shell">
+      <div className="section-grid columns-2" style={{ gap: "1.5rem" }}>
+        <div className="card">
+          <div className="card-header">
+            <h1 className="card-title">Verifier setup</h1>
+            <p className="form-note" style={{ marginTop: "0.75rem" }}>
+              Validate verifier registration fields in the admin interface.
+            </p>
+          </div>
+          <div className="card-body">
+            {status.message && (
+              <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
+                {status.message}
+              </div>
+            )}
 
-      <div className="row">
-        <div className="col-lg-6 mb-4">
-          <div className="card shadow">
-            <div className="card-header bg-white border-bottom">
-              <h5 className="mb-0">Create Verifier</h5>
-            </div>
-            <div className="card-body">
-              <form>
-                <div className="mb-3">
-                  <label htmlFor="verifier_name" className="form-label">
-                    Name <span className="text-danger">*</span>
-                  </label>
-                  <input type="text" id="verifier_name" className="form-control" required />
-                </div>
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="name" className="form-label">
+                  Verifier name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`input-field ${errors.name ? "input-error" : ""}`}
+                  placeholder="Enter verifier name"
+                />
+                {errors.name && <div className="field-error">{errors.name}</div>}
+              </div>
 
-                <div className="mb-3">
-                  <label htmlFor="verifier_email" className="form-label">
-                    Email <span className="text-danger">*</span>
-                  </label>
-                  <input type="email" id="verifier_email" className="form-control" required />
-                </div>
+              <div className="form-group">
+                <label htmlFor="email" className="form-label">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`input-field ${errors.email ? "input-error" : ""}`}
+                  placeholder="email@example.com"
+                />
+                {errors.email && <div className="field-error">{errors.email}</div>}
+              </div>
 
-                <div className="mb-3">
-                  <label htmlFor="verifier_password" className="form-label">
-                    Password <span className="text-danger">*</span>
-                  </label>
-                  <input type="password" id="verifier_password" className="form-control" required />
-                </div>
-
-                <button type="submit" className="btn btn-primary w-100">
-                  Create Verifier
-                </button>
-              </form>
-            </div>
+              <button type="submit" className="button button-primary">
+                Validate verifier
+              </button>
+            </form>
           </div>
         </div>
 
-        <div className="col-lg-6 mb-4">
-          <div className="card shadow">
-            <div className="card-header bg-white border-bottom">
-              <h5 className="mb-0">Existing Verifiers</h5>
-            </div>
-            <div className="card-body">
-              {verifiers.length === 0 ? (
-                <div className="alert alert-info mb-0">No verifiers created yet.</div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-sm table-hover">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Event</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {verifiers.map((verifier) => (
-                        <tr key={verifier.verifier_id}>
-                          <td>{verifier.name}</td>
-                          <td>{verifier.email}</td>
-                          <td>{verifier.event}</td>
-                          <td>
-                            <button className="btn btn-sm btn-danger">Delete</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">Active verifiers</h2>
+          </div>
+          <div className="card-body">
+            <div className="section-grid columns-1">
+              {verifiers.map((item) => (
+                <div key={item.name} className="card" style={{ boxShadow: "none", border: "1px solid rgba(15, 23, 42, 0.08)" }}>
+                  <div className="card-body" style={{ padding: "1rem" }}>
+                    <h3 style={{ margin: 0 }}>{item.name}</h3>
+                    <p className="form-note" style={{ marginTop: "0.5rem" }}>{item.role}</p>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
