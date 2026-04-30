@@ -1,456 +1,592 @@
-import React, { useMemo, useState } from "react";
-import {
-  Badge,
-  Button,
-  Card,
-  Col,
-  Container,
-  Dropdown,
-  Form,
-  InputGroup,
-  Row,
-  Table,
-} from "react-bootstrap";
-import "bootstrap-icons/font/bootstrap-icons.css";
+import React, { useState } from "react";
 
-const mockParticipants = [
+const initialParticipants = [
   {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@email.com",
-    phone: "(555) 123-4567",
-    organization: "Tech Corp",
-    event: "Spring Conference",
-    status: "Registered",
-    approval: "Approved",
+    id: 1, name: "Arjun Mehta", email: "arjun.mehta@email.com",
+    event: "Leadership Summit", registeredAt: "2026-04-30T09:15:00", approval: "Pending",
   },
   {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane.smith@email.com",
-    phone: "(555) 234-5678",
-    organization: "Innovation Labs",
-    event: "Developer Hackathon",
-    status: "Registered",
-    approval: "Pending",
+    id: 2, name: "Priya Sharma", email: "priya.sharma@email.com",
+    event: "Developer Hackathon", registeredAt: "2026-04-30T10:30:00", approval: "Pending",
   },
   {
-    id: 3,
-    name: "Michael Johnson",
-    email: "michael.j@email.com",
-    phone: "(555) 345-6789",
-    organization: "Global Industries",
-    event: "Spring Conference",
-    status: "Registered",
-    approval: "Approved",
+    id: 3, name: "Rahul Verma", email: "rahul.verma@email.com",
+    event: "Community Training", registeredAt: "2026-04-29T14:20:00", approval: "Pending",
   },
   {
-    id: 4,
-    name: "Sarah Wilson",
-    email: "sarah.w@email.com",
-    phone: "(555) 456-7890",
-    organization: "Creative Studios",
-    event: "Marketing Workshop",
-    status: "Cancelled",
-    approval: "Denied",
+    id: 4, name: "Sneha Patel", email: "sneha.patel@email.com",
+    event: "Volunteer Orientation", registeredAt: "2026-04-29T11:45:00", approval: "Pending",
   },
   {
-    id: 5,
-    name: "David Brown",
-    email: "david.brown@email.com",
-    phone: "(555) 567-8901",
-    organization: "Finance Group",
-    event: "Spring Conference",
-    status: "Registered",
-    approval: "Pending",
+    id: 5, name: "Kiran Kumar", email: "kiran.kumar@email.com",
+    event: "Leadership Summit", registeredAt: "2026-04-28T16:00:00", approval: "Pending",
   },
   {
-    id: 6,
-    name: "Emily Davis",
-    email: "emily.davis@email.com",
-    phone: "(555) 678-9012",
-    organization: "Health Solutions",
-    event: "Developer Hackathon",
-    status: "Registered",
-    approval: "Approved",
+    id: 6, name: "Deepa Nair", email: "deepa.nair@email.com",
+    event: "Tech Conference", registeredAt: "2026-04-25T08:00:00",
+    approval: "Approved", decidedAt: "2026-04-26T09:00:00",
   },
   {
-    id: 7,
-    name: "Christopher Lee",
-    email: "chris.lee@email.com",
-    phone: "(555) 789-0123",
-    organization: "Tech Ventures",
-    event: "Charity Gala",
-    status: "Registered",
-    approval: "Approved",
+    id: 7, name: "Amit Singh", email: "amit.singh@email.com",
+    event: "Networking Breakfast", registeredAt: "2026-04-24T10:00:00",
+    approval: "Denied", decidedAt: "2026-04-25T11:00:00",
   },
   {
-    id: 8,
-    name: "Jessica Martinez",
-    email: "jessica.m@email.com",
-    phone: "(555) 890-1234",
-    organization: "Marketing Hub",
-    event: "Marketing Workshop",
-    status: "Registered",
-    approval: "Pending",
+    id: 8, name: "Meera Joshi", email: "meera.joshi@email.com",
+    event: "Spring Conference", registeredAt: "2026-04-23T12:00:00",
+    approval: "Approved", decidedAt: "2026-04-24T13:00:00",
+  },
+  {
+    id: 9, name: "Vijay Reddy", email: "vijay.reddy@email.com",
+    event: "Developer Hackathon", registeredAt: "2026-04-22T14:00:00",
+    approval: "Denied", decidedAt: "2026-04-23T15:00:00",
+  },
+  {
+    id: 10, name: "Anita Gupta", email: "anita.gupta@email.com",
+    event: "Community Training", registeredAt: "2026-04-21T16:00:00",
+    approval: "Approved", decidedAt: "2026-04-22T17:00:00",
+  },
+  {
+    id: 11, name: "Ravi Shankar", email: "ravi.shankar@email.com",
+    event: "Charity Gala", registeredAt: "2026-04-20T09:00:00",
+    approval: "Approved", decidedAt: "2026-04-21T10:00:00",
+  },
+  {
+    id: 12, name: "Kavitha Menon", email: "kavitha.menon@email.com",
+    event: "Marketing Workshop", registeredAt: "2026-04-19T11:00:00",
+    approval: "Denied", decidedAt: "2026-04-20T12:00:00",
   },
 ];
 
+const AVATAR_COLORS = [
+  "#3b82f6","#8b5cf6","#ec4899","#f59e0b",
+  "#10b981","#6366f1","#ef4444","#0ea5e9",
+];
+
+function getInitials(name) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function getAvatarColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+/* ── SVG Icons ─────────────────────────────────────────────────────────── */
+const ClockIcon = ({ size = 14, color = "currentColor" }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none"
+    stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const CalendarIcon = ({ size = 12, color = "currentColor" }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none"
+    stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <line x1="16" y1="2" x2="16" y2="6" />
+    <line x1="8" y1="2" x2="8" y2="6" />
+    <line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+);
+
+const CheckIcon = ({ size = 14 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const CrossIcon = ({ size = 14 }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const PenIcon = () => (
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+  </svg>
+);
+
+const UsersIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const CheckCircleIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+    <polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+
+const XCircleIcon = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="15" y1="9" x2="9" y2="15" />
+    <line x1="9" y1="9" x2="15" y2="15" />
+  </svg>
+);
+
+const EmptyUsersIcon = () => (
+  <svg viewBox="0 0 24 24" width="40" height="40" fill="none"
+    stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const EmptyDocIcon = () => (
+  <svg viewBox="0 0 24 24" width="40" height="40" fill="none"
+    stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+  </svg>
+);
+
+/* ── Component ─────────────────────────────────────────────────────────── */
 function Participant() {
-  const [participants, setParticipants] = useState(mockParticipants);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedEvent, setSelectedEvent] = useState("All");
-  const [selectedApproval, setSelectedApproval] = useState("All");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [participants, setParticipants] = useState(initialParticipants);
 
-  const stats = useMemo(() => {
-    const total = participants.length;
-    const approved = participants.filter((p) => p.approval === "Approved").length;
-    const pending = participants.filter((p) => p.approval === "Pending").length;
-    const denied = participants.filter((p) => p.approval === "Denied").length;
-    return { total, approved, pending, denied };
-  }, [participants]);
+  const pending = participants.filter((p) => p.approval === "Pending");
+  const decided = participants
+    .filter((p) => p.approval !== "Pending")
+    .sort((a, b) => new Date(b.decidedAt) - new Date(a.decidedAt))
+    .slice(0, 5);
 
-  const filteredParticipants = useMemo(() => {
-    return participants.filter((p) => {
-      const matchesSearch =
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.organization.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesEvent = selectedEvent === "All" || p.event === selectedEvent;
-      const matchesApproval = selectedApproval === "All" || p.approval === selectedApproval;
-      const matchesStatus = selectedStatus === "All" || p.status === selectedStatus;
-
-      return matchesSearch && matchesEvent && matchesApproval && matchesStatus;
-    });
-  }, [participants, searchTerm, selectedEvent, selectedApproval, selectedStatus]);
+  const totalApproved = participants.filter((p) => p.approval === "Approved").length;
+  const totalDenied = participants.filter((p) => p.approval === "Denied").length;
 
   const handleApprove = (id) => {
-    setParticipants(
-      participants.map((p) =>
-        p.id === id ? { ...p, approval: "Approved" } : p
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, approval: "Approved", decidedAt: new Date().toISOString() } : p
       )
     );
   };
 
   const handleReject = (id) => {
-    setParticipants(
-      participants.map((p) =>
-        p.id === id ? { ...p, approval: "Denied" } : p
+    setParticipants((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, approval: "Denied", decidedAt: new Date().toISOString() } : p
       )
     );
   };
 
-  const handleDelete = (id) => {
-    setParticipants(participants.filter((p) => p.id !== id));
-  };
-
-  const handleExport = () => {
-    const csv = [
-      ["Name", "Email", "Phone", "Organization", "Event", "Status", "Approval"],
-      ...filteredParticipants.map((p) => [
-        p.name,
-        p.email,
-        p.phone,
-        p.organization,
-        p.event,
-        p.status,
-        p.approval,
-      ]),
-    ]
-      .map((row) => row.map((cell) => `"${cell}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `participants_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
-
-  const getApprovalBadge = (approval) => {
-    const variants = {
-      Approved: "success",
-      Pending: "warning",
-      Denied: "danger",
-    };
-    return <Badge bg={variants[approval] || "secondary"}>{approval}</Badge>;
-  };
-
-  const events = Array.from(new Set(participants.map((p) => p.event)));
+  const stats = [
+    { label: "Awaiting Approval", value: pending.length, color: "#d97706", bg: "#fffbeb", border: "#f59e0b", icon: <ClockIcon size={22} /> },
+    { label: "Approved",          value: totalApproved,  color: "#16a34a", bg: "#f0fdf4", border: "#22c55e", icon: <CheckCircleIcon /> },
+    { label: "Rejected",          value: totalDenied,    color: "#dc2626", bg: "#fff1f2", border: "#ef4444", icon: <XCircleIcon /> },
+  ];
 
   return (
-    <div style={{ backgroundColor: "#f5f3f0", minHeight: "100vh", paddingBottom: "40px" }}>
-      {/* Header */}
-      <div style={{ backgroundColor: "#1e3a5f", color: "white", padding: "40px 0" }}>
-        <Container>
-          <h1 className="mb-2" style={{ fontSize: "2.5rem", fontWeight: "700" }}>
-            Participants
-          </h1>
-          <p className="mb-0" style={{ fontSize: "1rem", opacity: 0.9 }}>
-            Manage event registrations, approvals, and participant details
-          </p>
-        </Container>
+    <div className="pa-root">
+      {/* Page Header */}
+      <div className="mb-4">
+        <h1 className="h3 fw-bold mb-1">Participant Approvals</h1>
+        <p className="text-muted mb-0">Review and manage participant registration requests</p>
       </div>
 
-      <Container style={{ paddingTop: "40px" }}>
-        {/* Summary Cards */}
-        <Row className="mb-5 gy-4">
-          {[
-            { label: "Total Participants", value: stats.total, color: "#1e3a5f", icon: "bi-people" },
-            { label: "Approved", value: stats.approved, color: "#22c55e", icon: "bi-check-circle" },
-            { label: "Pending", value: stats.pending, color: "#eab308", icon: "bi-clock" },
-            { label: "Denied", value: stats.denied, color: "#ef4444", icon: "bi-x-circle" },
-          ].map((stat, idx) => (
-            <Col key={idx} xs={12} sm={6} lg={3}>
-              <Card
-                style={{
-                  border: "none",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                <Card.Body className="p-4">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <div>
-                      <p className="text-muted mb-2" style={{ fontSize: "0.9rem" }}>
-                        {stat.label}
-                      </p>
-                      <h2 style={{ color: stat.color, fontWeight: "700", margin: "0" }}>
-                        {stat.value}
-                      </h2>
-                    </div>
-                    <div
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        borderRadius: "10px",
-                        backgroundColor: `${stat.color}20`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <i className={`bi ${stat.icon}`} style={{ color: stat.color, fontSize: "1.5rem" }}></i>
-                    </div>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+      {/* Stats */}
+      <div className="pa-stats-grid mb-4">
+        {stats.map((s, i) => (
+          <div key={i} className="pa-stat-card" style={{ borderTop: `3px solid ${s.border}`, background: s.bg }}>
+            <div style={{ color: s.color, flexShrink: 0 }}>{s.icon}</div>
+            <div>
+              <div className="pa-stat-label">{s.label}</div>
+              <div className="pa-stat-value" style={{ color: s.color }}>{s.value}</div>
+            </div>
+          </div>
+        ))}
+      </div>
 
-        {/* Filters and Search */}
-        <Card
-          style={{
-            border: "none",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-            marginBottom: "30px",
-          }}
-        >
-          <Card.Body className="p-4">
-            <Row className="gy-3">
-              {/* Search Bar */}
-              <Col xs={12} md={4}>
-                <InputGroup>
-                  <InputGroup.Text style={{ backgroundColor: "white", border: "1px solid #ddd" }}>
-                    <i className="bi bi-search"></i>
-                  </InputGroup.Text>
-                  <Form.Control
-                    placeholder="Search name, email, org…"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ border: "1px solid #ddd" }}
-                  />
-                </InputGroup>
-              </Col>
+      {/* Two-panel grid */}
+      <div className="pa-grid">
 
-              {/* Event Filter */}
-              <Col xs={12} sm={6} md={2}>
-                <Form.Select
-                  value={selectedEvent}
-                  onChange={(e) => setSelectedEvent(e.target.value)}
-                  style={{ borderRadius: "6px", border: "1px solid #ddd" }}
-                >
-                  <option>All Events</option>
-                  {events.map((event) => (
-                    <option key={event} value={event}>
-                      {event}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Col>
-
-              {/* Approval Filter */}
-              <Col xs={12} sm={6} md={2}>
-                <Form.Select
-                  value={selectedApproval}
-                  onChange={(e) => setSelectedApproval(e.target.value)}
-                  style={{ borderRadius: "6px", border: "1px solid #ddd" }}
-                >
-                  <option>All Approvals</option>
-                  <option>Approved</option>
-                  <option>Pending</option>
-                  <option>Denied</option>
-                </Form.Select>
-              </Col>
-
-              {/* Status Filter */}
-              <Col xs={12} sm={6} md={2}>
-                <Form.Select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  style={{ borderRadius: "6px", border: "1px solid #ddd" }}
-                >
-                  <option>All Status</option>
-                  <option>Registered</option>
-                  <option>Cancelled</option>
-                </Form.Select>
-              </Col>
-
-              {/* Export Button */}
-              <Col xs={12} md={2} className="d-flex gap-2">
-                <Button
-                  variant="outline-secondary"
-                  onClick={handleExport}
-                  style={{ borderRadius: "6px", flex: 1 }}
-                >
-                  <i className="bi bi-download me-2"></i>Export
-                </Button>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-
-        {/* Results Count */}
-        <div className="mb-3">
-          <p className="mb-0 text-muted">
-            Showing <strong>{filteredParticipants.length}</strong> of{" "}
-            <strong>{participants.length}</strong> participants
-          </p>
-        </div>
-
-        {/* Participants Table */}
-        <Card
-          style={{
-            border: "none",
-            borderRadius: "12px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
-            overflow: "hidden",
-          }}
-        >
-          <div style={{ overflowX: "auto" }}>
-            <Table hover responsive className="mb-0">
-              <thead style={{ backgroundColor: "#f9f7f5" }}>
-                <tr>
-                  <th style={{ borderBottom: "1px solid #e5e0d9", padding: "16px", fontWeight: "600", color: "#333" }}>
-                    Name
-                  </th>
-                  <th style={{ borderBottom: "1px solid #e5e0d9", padding: "16px", fontWeight: "600", color: "#333" }}>
-                    Email & Phone
-                  </th>
-                  <th style={{ borderBottom: "1px solid #e5e0d9", padding: "16px", fontWeight: "600", color: "#333" }}>
-                    Organization
-                  </th>
-                  <th style={{ borderBottom: "1px solid #e5e0d9", padding: "16px", fontWeight: "600", color: "#333" }}>
-                    Event
-                  </th>
-                  <th style={{ borderBottom: "1px solid #e5e0d9", padding: "16px", fontWeight: "600", color: "#333" }}>
-                    Status
-                  </th>
-                  <th style={{ borderBottom: "1px solid #e5e0d9", padding: "16px", fontWeight: "600", color: "#333" }}>
-                    Approval
-                  </th>
-                  <th style={{ borderBottom: "1px solid #e5e0d9", padding: "16px", fontWeight: "600", color: "#333" }}>
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredParticipants.map((participant) => (
-                  <tr key={participant.id}>
-                    <td style={{ padding: "16px", borderBottom: "1px solid #e5e0d9" }}>
-                      <strong>{participant.name}</strong>
-                    </td>
-                    <td style={{ padding: "16px", borderBottom: "1px solid #e5e0d9" }}>
-                      <div style={{ fontSize: "0.9rem" }}>{participant.email}</div>
-                      <div style={{ fontSize: "0.85rem", color: "#888" }}>{participant.phone}</div>
-                    </td>
-                    <td style={{ padding: "16px", borderBottom: "1px solid #e5e0d9" }}>
-                      {participant.organization}
-                    </td>
-                    <td style={{ padding: "16px", borderBottom: "1px solid #e5e0d9" }}>
-                      <span style={{ fontSize: "0.9rem" }}>{participant.event}</span>
-                    </td>
-                    <td style={{ padding: "16px", borderBottom: "1px solid #e5e0d9" }}>
-                      <Badge bg={participant.status === "Registered" ? "info" : "secondary"}>
-                        {participant.status}
-                      </Badge>
-                    </td>
-                    <td style={{ padding: "16px", borderBottom: "1px solid #e5e0d9" }}>
-                      {getApprovalBadge(participant.approval)}
-                    </td>
-                    <td style={{ padding: "16px", borderBottom: "1px solid #e5e0d9" }}>
-                      <div className="d-flex gap-2">
-                        <Button
-                          variant="link"
-                          size="sm"
-                          title="View details"
-                          style={{ color: "#1e3a5f", textDecoration: "none" }}
-                        >
-                          <i className="bi bi-eye"></i>
-                        </Button>
-                        {participant.approval !== "Approved" && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            title="Approve"
-                            onClick={() => handleApprove(participant.id)}
-                            style={{ color: "#22c55e", textDecoration: "none" }}
-                          >
-                            <i className="bi bi-check-circle"></i>
-                          </Button>
-                        )}
-                        {participant.approval !== "Denied" && (
-                          <Button
-                            variant="link"
-                            size="sm"
-                            title="Reject"
-                            onClick={() => handleReject(participant.id)}
-                            style={{ color: "#ef4444", textDecoration: "none" }}
-                          >
-                            <i className="bi bi-x-circle"></i>
-                          </Button>
-                        )}
-                        <Button
-                          variant="link"
-                          size="sm"
-                          title="Delete"
-                          onClick={() => handleDelete(participant.id)}
-                          style={{ color: "#888", textDecoration: "none" }}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
+        {/* ── Awaiting Approval ─────────────────────────────────────── */}
+        <div className="pa-card">
+          <div className="pa-card-header">
+            <div className="pa-card-title">
+              <span style={{ color: "#f59e0b", display: "flex" }}><ClockIcon size={15} /></span>
+              Awaiting Approval
+              {pending.length > 0 && (
+                <span className="pa-count-badge">{pending.length}</span>
+              )}
+            </div>
+            {pending.length > 0 && (
+              <span className="pa-header-hint">Approve or reject each request</span>
+            )}
           </div>
 
-          {filteredParticipants.length === 0 && (
-            <div style={{ padding: "40px", textAlign: "center", backgroundColor: "#fafaf8" }}>
-              <i className="bi bi-inbox" style={{ fontSize: "2rem", color: "#ccc", marginBottom: "10px", display: "block" }}></i>
-              <p className="text-muted mb-0">No participants found matching your filters</p>
+          <div className="pa-card-body">
+            {pending.length === 0 ? (
+              <div className="pa-empty">
+                <EmptyUsersIcon />
+                <p>No pending approvals</p>
+                <span>All registrations have been reviewed</span>
+              </div>
+            ) : (
+              <div className="pa-list">
+                {pending.map((p) => (
+                  <div key={p.id} className="pa-item">
+                    <div className="pa-avatar" style={{ background: getAvatarColor(p.name) }}>
+                      {getInitials(p.name)}
+                    </div>
+
+                    <div className="pa-item-info">
+                      <div className="pa-item-name">{p.name}</div>
+                      <div className="pa-item-email">{p.email}</div>
+                      <div className="pa-item-meta">
+                        <span className="pa-meta-chip">
+                          <CalendarIcon />{p.event}
+                        </span>
+                        <span className="pa-meta-time">
+                          <ClockIcon size={11} />{timeAgo(p.registeredAt)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pa-item-actions">
+                      <button className="pa-btn-approve" onClick={() => handleApprove(p.id)}>
+                        <CheckIcon size={13} /> Approve
+                      </button>
+                      <button className="pa-btn-reject" onClick={() => handleReject(p.id)}>
+                        <CrossIcon size={13} /> Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Recent Decisions ──────────────────────────────────────── */}
+        <div className="pa-card">
+          <div className="pa-card-header">
+            <div className="pa-card-title">
+              <span style={{ color: "#6366f1", display: "flex" }}><PenIcon /></span>
+              Recent Decisions
+              <span className="pa-label-muted">last 5</span>
+            </div>
+          </div>
+
+          <div className="pa-card-body">
+            {decided.length === 0 ? (
+              <div className="pa-empty">
+                <EmptyDocIcon />
+                <p>No decisions yet</p>
+                <span>Review pending approvals to see history here</span>
+              </div>
+            ) : (
+              <div className="pa-list">
+                {decided.map((p) => (
+                  <div key={p.id} className="pa-item">
+                    <div className="pa-avatar" style={{ background: getAvatarColor(p.name) }}>
+                      {getInitials(p.name)}
+                    </div>
+
+                    <div className="pa-item-info">
+                      <div className="pa-item-name">{p.name}</div>
+                      <div className="pa-item-email">{p.email}</div>
+                      <div className="pa-item-meta">
+                        <span className="pa-meta-chip">
+                          <CalendarIcon />{p.event}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pa-decision-col">
+                      {p.approval === "Approved" ? (
+                        <span className="pa-badge-approved">
+                          <CheckIcon size={11} /> Approved
+                        </span>
+                      ) : (
+                        <span className="pa-badge-denied">
+                          <CrossIcon size={11} /> Rejected
+                        </span>
+                      )}
+                      <div className="pa-decision-time">
+                        <ClockIcon size={10} color="#9ca3af" />
+                        {timeAgo(p.decidedAt)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer note */}
+          {decided.length > 0 && (
+            <div className="pa-card-footer">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#9ca3af"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              Showing the 5 most recent decisions
             </div>
           )}
-        </Card>
-      </Container>
+        </div>
+
+      </div>
+
+      <style>{`
+        .pa-root { padding-bottom: 40px; }
+
+        /* Stats row */
+        .pa-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+        .pa-stat-card {
+          border-radius: 12px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+          padding: 20px 22px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .pa-stat-label {
+          font-size: 11.5px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.055em;
+          color: #6b7280;
+          margin-bottom: 5px;
+        }
+        .pa-stat-value { font-size: 30px; font-weight: 800; line-height: 1; }
+
+        /* Two-panel grid */
+        .pa-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          align-items: start;
+        }
+
+        /* Card shell */
+        .pa-card {
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .pa-card-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px;
+          border-bottom: 1px solid #f0f0f0;
+        }
+        .pa-card-title {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 14px;
+          font-weight: 700;
+          color: #1a202c;
+        }
+        .pa-count-badge {
+          background: #fef3c7;
+          color: #d97706;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 20px;
+        }
+        .pa-label-muted {
+          font-size: 11px;
+          font-weight: 500;
+          color: #9ca3af;
+        }
+        .pa-header-hint { font-size: 12px; color: #9ca3af; }
+        .pa-card-body { overflow-y: auto; max-height: 520px; }
+        .pa-card-footer {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 11px 20px;
+          border-top: 1px solid #f3f4f6;
+          font-size: 12px;
+          color: #9ca3af;
+          background: #fafafa;
+        }
+
+        /* List + items */
+        .pa-list { padding: 4px 0; }
+        .pa-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 14px 20px;
+          border-bottom: 1px solid #f9fafb;
+          transition: background 0.1s;
+        }
+        .pa-item:last-child { border-bottom: none; }
+        .pa-item:hover { background: #fafafa; }
+
+        /* Avatar */
+        .pa-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 700;
+          color: #fff;
+          flex-shrink: 0;
+          letter-spacing: 0.03em;
+        }
+
+        /* Item info */
+        .pa-item-info { flex: 1; min-width: 0; }
+        .pa-item-name {
+          font-size: 13.5px;
+          font-weight: 600;
+          color: #111827;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .pa-item-email {
+          font-size: 12px;
+          color: #9ca3af;
+          margin-top: 1px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .pa-item-meta {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 6px;
+          flex-wrap: wrap;
+        }
+        .pa-meta-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: #6b7280;
+          background: #f3f4f6;
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-weight: 500;
+        }
+        .pa-meta-time {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: #9ca3af;
+        }
+
+        /* Approve / Reject buttons */
+        .pa-item-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+        .pa-btn-approve, .pa-btn-reject {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 13px;
+          border-radius: 7px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+          transition: all 0.12s;
+          line-height: 1;
+          white-space: nowrap;
+        }
+        .pa-btn-approve { background: #dcfce7; color: #16a34a; }
+        .pa-btn-approve:hover { background: #bbf7d0; transform: translateY(-1px); }
+        .pa-btn-reject { background: #fee2e2; color: #dc2626; }
+        .pa-btn-reject:hover { background: #fecaca; transform: translateY(-1px); }
+
+        /* Decision column */
+        .pa-decision-col {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 5px;
+          flex-shrink: 0;
+        }
+        .pa-badge-approved, .pa-badge-denied {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 11.5px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+        .pa-badge-approved { background: #dcfce7; color: #16a34a; }
+        .pa-badge-denied   { background: #fee2e2; color: #dc2626; }
+        .pa-decision-time {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 11px;
+          color: #9ca3af;
+        }
+
+        /* Empty state */
+        .pa-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 52px 24px;
+          gap: 8px;
+          text-align: center;
+        }
+        .pa-empty p { font-size: 14px; font-weight: 600; color: #374151; margin: 0; }
+        .pa-empty span { font-size: 12px; color: #9ca3af; }
+
+        @media (max-width: 900px) {
+          .pa-grid { grid-template-columns: 1fr; }
+          .pa-stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 560px) {
+          .pa-stats-grid { grid-template-columns: 1fr; }
+          .pa-item-actions { flex-direction: row; }
+        }
+      `}</style>
     </div>
   );
 }

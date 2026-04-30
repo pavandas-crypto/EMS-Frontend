@@ -1,16 +1,27 @@
-# React + Vite
+Make reports it in a professional reports design and keep a color combination of yellow black and white and grey design to create a report and based on the BRD Particular Event Participants
+Total approved participants
+QR pass number
+Company name
+Designation
+Membership
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+After event, management needs:
+Total registered participants
+Total approved participants
+Total attended participants
+Verified by verifier name
+Company-wise list
+Member-wise list
+Export to Excel
+System must allow:
+Filter
+Sort
+Download data
+Show less
+Read c:\Users\pavan\OneDrive\Documents\ems_frontend\src\component\admin\Report.jsx
+Now I'll build the full Reports page — yellow/black/white palette, BRD-exact columns, three report views (Participants, Company-wise, Member-wise), sortable columns, filters, and CSV export.
 
-Currently, two official plugins are available:
+Write c:\Users\pavan\OneDrive\Documents\ems_frontend\src\component\admin\Report.jsx
+706 lines
+Credit balance is too low
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
