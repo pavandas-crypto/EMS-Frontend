@@ -1,4 +1,4 @@
-# Parallax Images
+npm ru# Parallax Images
 
 This folder contains images used for the parallax scrolling effect on the landing page.
 
