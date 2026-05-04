@@ -1,24 +1,56 @@
 import { useState } from "react";
 
-const FIELDS = [
-  { id: "name",        label: "Full Name",     x: 20, y: 110, fontSize: 18, bold: true,  color: "#0f172a" },
-  { id: "mobile",      label: "Mobile",        x: 20, y: 148, fontSize: 13, bold: false, color: "#475569" },
-  { id: "designation", label: "Designation",   x: 20, y: 172, fontSize: 13, bold: false, color: "#475569" },
-  { id: "company",     label: "Company Name",  x: 20, y: 196, fontSize: 13, bold: false, color: "#475569" },
-  { id: "passcode",    label: "PASS-001234",   x: 20, y: 235, fontSize: 14, bold: true,  color: "#4f46e5" },
-  { id: "qr",          label: "QR",            x: 105, y: 300, fontSize: 12, bold: false, color: "#0f172a" },
+const TEMPLATES = [
+  {
+    id: "classic", name: "Classic White",
+    bgColor: "#ffffff", accent: "#4f46e5",
+    fields: [
+      { id:"name",        label:"Full Name",    x:20, y:30,  fontSize:20, bold:true,  color:"#0f172a" },
+      { id:"mobile",      label:"Mobile",       x:20, y:62,  fontSize:13, bold:false, color:"#64748b" },
+      { id:"designation", label:"Designation",  x:20, y:82,  fontSize:13, bold:false, color:"#64748b" },
+      { id:"company",     label:"Company Name", x:20, y:102, fontSize:13, bold:false, color:"#64748b" },
+      { id:"passcode",    label:"PASS-001234",  x:20, y:140, fontSize:13, bold:true,  color:"#4f46e5", visible:true },
+      { id:"qr",          label:"QR",           x:95, y:200, fontSize:12, bold:false, color:"#0f172a", visible:true },
+    ],
+  },
+  {
+    id: "dark", name: "Dark Pro",
+    bgColor: "#0f172a", accent: "#6366f1",
+    fields: [
+      { id:"name",        label:"Full Name",    x:20, y:30,  fontSize:20, bold:true,  color:"#f8fafc" },
+      { id:"mobile",      label:"Mobile",       x:20, y:62,  fontSize:13, bold:false, color:"#94a3b8" },
+      { id:"designation", label:"Designation",  x:20, y:82,  fontSize:13, bold:false, color:"#94a3b8" },
+      { id:"company",     label:"Company Name", x:20, y:102, fontSize:13, bold:false, color:"#94a3b8" },
+      { id:"passcode",    label:"PASS-001234",  x:20, y:140, fontSize:13, bold:true,  color:"#a5b4fc", visible:true },
+      { id:"qr",          label:"QR",           x:95, y:200, fontSize:12, bold:false, color:"#f8fafc", visible:true },
+    ],
+  },
+  {
+    id: "corporate", name: "Corporate Blue",
+    bgColor: "#eff6ff", accent: "#1d4ed8",
+    fields: [
+      { id:"name",        label:"Full Name",    x:20, y:30,  fontSize:20, bold:true,  color:"#1e3a8a" },
+      { id:"mobile",      label:"Mobile",       x:20, y:62,  fontSize:13, bold:false, color:"#3b82f6" },
+      { id:"designation", label:"Designation",  x:20, y:82,  fontSize:13, bold:false, color:"#3b82f6" },
+      { id:"company",     label:"Company Name", x:20, y:102, fontSize:13, bold:false, color:"#3b82f6" },
+      { id:"passcode",    label:"PASS-001234",  x:20, y:140, fontSize:13, bold:true,  color:"#1d4ed8", visible:true },
+      { id:"qr",          label:"QR",           x:95, y:200, fontSize:12, bold:false, color:"#1e3a8a", visible:true },
+    ],
+  },
 ];
 
 const REGISTRATIONS = [
-  { id:1,  name:"Deepa Nair",    mobile:"9876543210", designation:"Engineer",    company:"Infosys",   passcode:"PASS-1001" },
-  { id:2,  name:"Meera Joshi",   mobile:"9123456789", designation:"Manager",     company:"TCS",       passcode:"PASS-1002" },
-  { id:3,  name:"Anita Gupta",   mobile:"9001122334", designation:"Director",    company:"Wipro",     passcode:"PASS-1003" },
-  { id:4,  name:"Ravi Shankar",  mobile:"9988776655", designation:"Developer",   company:"HCL",       passcode:"PASS-1004" },
-  { id:5,  name:"Suresh Babu",   mobile:"9765432100", designation:"Consultant",  company:"Cognizant", passcode:"PASS-1005" },
-  { id:6,  name:"Prakash Iyer",  mobile:"9654321099", designation:"Analyst",     company:"Accenture", passcode:"PASS-1006" },
-  { id:7,  name:"Kavya Menon",   mobile:"9543210988", designation:"Architect",   company:"IBM",       passcode:"PASS-1007" },
-  { id:8,  name:"Arjun Mehta",   mobile:"9432109877", designation:"Lead",        company:"Oracle",    passcode:"PASS-1008" },
+  { id:1, name:"Deepa Nair",   mobile:"9876543210", designation:"Engineer",   company:"Infosys",   passcode:"PASS-1001", event:"Leadership Summit" },
+  { id:2, name:"Meera Joshi",  mobile:"9123456789", designation:"Manager",    company:"TCS",       passcode:"PASS-1002", event:"Tech Conference" },
+  { id:3, name:"Anita Gupta",  mobile:"9001122334", designation:"Director",   company:"Wipro",     passcode:"PASS-1003", event:"Leadership Summit" },
+  { id:4, name:"Ravi Shankar", mobile:"9988776655", designation:"Developer",  company:"HCL",       passcode:"PASS-1004", event:"Developer Hackathon" },
+  { id:5, name:"Suresh Babu",  mobile:"9765432100", designation:"Consultant", company:"Cognizant", passcode:"PASS-1005", event:"Tech Conference" },
+  { id:6, name:"Prakash Iyer", mobile:"9654321099", designation:"Analyst",    company:"Accenture", passcode:"PASS-1006", event:"Developer Hackathon" },
+  { id:7, name:"Kavya Menon",  mobile:"9543210988", designation:"Architect",  company:"IBM",       passcode:"PASS-1007", event:"Leadership Summit" },
+  { id:8, name:"Arjun Mehta",  mobile:"9432109877", designation:"Lead",       company:"Oracle",    passcode:"PASS-1008", event:"Developer Hackathon" },
 ];
+
+const ALL_EVENTS = ["All Events", ...new Set(REGISTRATIONS.map(r => r.event))];
 
 const QRPlaceholder = ({ size = 120 }) => (
   <svg width={size} height={size} viewBox="0 0 120 120" style={{ display:"block" }}>
@@ -38,28 +70,11 @@ const QRPlaceholder = ({ size = 120 }) => (
 function TicketCanvas({ bgColor, bgImage, selectedId, onSelect, fields }) {
   return (
     <div style={{
-      width:360, height:640, borderRadius:20, overflow:"hidden", position:"relative",
+      width:360, height:560, borderRadius:16, overflow:"hidden", position:"relative",
       background: bgImage ? `url(${bgImage}) center/cover` : bgColor,
       boxShadow:"0 24px 64px rgba(15,23,42,0.22)", cursor:"default", flexShrink:0,
-      border:"1px solid rgba(148,163,184,0.2)"
+      border:"1px solid rgba(148,163,184,0.2)", padding:16
     }}>
-      {/* Header stripe */}
-      <div style={{
-        background:"linear-gradient(135deg,#6366f1,#4f46e5)", height:90,
-        display:"flex", alignItems:"center", padding:"0 20px", gap:12
-      }}>
-        <div style={{
-          width:48, height:48, borderRadius:14, background:"rgba(255,255,255,0.2)",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          color:"#fff", fontWeight:800, fontSize:20
-        }}>E</div>
-        <div>
-          <div style={{color:"#fff", fontWeight:700, fontSize:15, letterSpacing:"-0.02em"}}>EMS Event Pass</div>
-          <div style={{color:"rgba(255,255,255,0.7)", fontSize:11, marginTop:2}}>Leadership Summit 2026</div>
-        </div>
-      </div>
-
-      {/* Fields */}
       {fields.filter(f=>f.visible!==false).map(f => (
         <div key={f.id} onClick={()=>onSelect(f.id)} style={{
           position:"absolute", left:f.x, top:f.y,
@@ -72,48 +87,57 @@ function TicketCanvas({ bgColor, bgImage, selectedId, onSelect, fields }) {
             : <span style={{ fontSize:f.fontSize, fontWeight:f.bold?"700":"400", color:f.color }}>
                 {f.id==="passcode"
                   ? <span style={{
-                      background:"#eef2ff", color:"#4f46e5", padding:"4px 14px",
+                      background:"#eef2ff", color:f.color, padding:"4px 14px",
                       borderRadius:20, fontFamily:"monospace", fontWeight:700,
-                      fontSize:14, letterSpacing:"0.08em"
+                      fontSize:13, letterSpacing:"0.08em", border:`1px solid ${f.color}22`
                     }}>{f.label}</span>
                   : f.label}
               </span>}
         </div>
       ))}
-
-      {/* Divider */}
-      <div style={{
-        position:"absolute", bottom:200, left:20, right:20,
-        borderTop:"1px dashed rgba(148,163,184,0.4)"
-      }}/>
-
-      {/* Footer */}
-      <div style={{
-        position:"absolute", bottom:0, left:0, right:0, height:50,
-        background:"linear-gradient(135deg,#6366f1,#4f46e5)",
-        display:"flex", alignItems:"center", justifyContent:"center"
-      }}>
-        <span style={{color:"rgba(255,255,255,0.7)", fontSize:11, letterSpacing:"0.12em"}}>
-          OFFICIAL EVENT PASS · DO NOT DUPLICATE
-        </span>
-      </div>
     </div>
   );
 }
 
 function DesignerSection() {
-  const [fields, setFields]       = useState(FIELDS);
+  const [activeTpl, setActiveTpl] = useState("classic");
+  const tpl = TEMPLATES.find(t => t.id === activeTpl);
+  const [fields, setFields]       = useState(tpl.fields);
   const [selected, setSelected]   = useState(null);
-  const [bgColor, setBgColor]     = useState("#ffffff");
+  const [bgColor, setBgColor]     = useState(tpl.bgColor);
   const [bgImage, setBgImage]     = useState(null);
   const [saved, setSaved]         = useState(false);
+
+  const applyTemplate = (id) => {
+    const t = TEMPLATES.find(x => x.id === id);
+    setActiveTpl(id); setFields(t.fields); setBgColor(t.bgColor);
+    setBgImage(null); setSelected(null);
+  };
 
   const sel = fields.find(f=>f.id===selected);
   const update = (id, key, val) =>
     setFields(prev=>prev.map(f=>f.id===id?{...f,[key]:val}:f));
 
   return (
-    <div style={{display:"flex", gap:20, alignItems:"flex-start"}}>
+    <div style={{display:"flex", flexDirection:"column", gap:16}}>
+
+      {/* ── Template Picker ── */}
+      <div style={{display:"flex", gap:10, flexWrap:"wrap", alignItems:"center"}}>
+        <span style={{fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.1em", color:"#64748b", marginRight:4}}>Template:</span>
+        {TEMPLATES.map(t => (
+          <button key={t.id} onClick={()=>applyTemplate(t.id)} style={{
+            padding:"7px 16px", borderRadius:10, border:`2px solid ${activeTpl===t.id ? t.accent : "#e2e8f0"}`,
+            background: activeTpl===t.id ? t.accent+"18" : "#fff",
+            color: activeTpl===t.id ? t.accent : "#64748b",
+            fontWeight:700, fontSize:13, cursor:"pointer", transition:"all 0.15s"
+          }}>
+            {activeTpl===t.id ? "✓ " : ""}{t.name}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Three-panel layout ── */}
+      <div style={{display:"flex", gap:20, alignItems:"flex-start"}}>
 
       {/* ── Left Toolbox ── */}
       <div style={{
@@ -187,7 +211,7 @@ function DesignerSection() {
           }}>
             {saved ? "✓ Template Saved!" : "Save Template"}
           </button>
-          <button onClick={()=>{setFields(FIELDS);setBgColor("#ffffff");setBgImage(null);}} style={{
+          <button onClick={()=>{applyTemplate(activeTpl);setSaved(false);}} style={{
             width:"100%", marginTop:6, padding:"8px", borderRadius:10,
             background:"transparent", color:"#94a3b8", border:"1px solid #e2e8f0",
             fontWeight:600, fontSize:12, cursor:"pointer"
@@ -272,48 +296,28 @@ function DesignerSection() {
         )}
       </div>
     </div>
+    </div>
   );
 }
 
-function MiniTicket({ reg, bgColor }) {
+function MiniTicket({ reg }) {
   return (
     <div style={{
       width:"100%", aspectRatio:"9/16", borderRadius:14, overflow:"hidden",
-      background: bgColor||"#ffffff", boxShadow:"0 8px 24px rgba(15,23,42,0.12)",
-      border:"1px solid #e2e8f0", position:"relative", display:"flex", flexDirection:"column"
+      background:"#fff", boxShadow:"0 8px 24px rgba(15,23,42,0.10)",
+      border:"1px solid #e2e8f0", display:"flex", flexDirection:"column", padding:10
     }}>
+      <div style={{fontWeight:700, fontSize:12, color:"#0f172a", marginBottom:2}}>{reg.name}</div>
+      <div style={{fontSize:9, color:"#64748b"}}>{reg.mobile}</div>
+      <div style={{fontSize:9, color:"#64748b"}}>{reg.designation}</div>
+      <div style={{fontSize:9, color:"#64748b", marginBottom:6}}>{reg.company}</div>
       <div style={{
-        background:"linear-gradient(135deg,#6366f1,#4f46e5)",
-        padding:"12px 14px", display:"flex", alignItems:"center", gap:8
-      }}>
-        <div style={{
-          width:28, height:28, borderRadius:8, background:"rgba(255,255,255,0.2)",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          color:"#fff", fontWeight:800, fontSize:13
-        }}>E</div>
-        <div style={{color:"#fff", fontWeight:700, fontSize:10}}>Event Pass</div>
-      </div>
-      <div style={{padding:"10px 12px", flex:1}}>
-        <div style={{fontWeight:700, fontSize:13, color:"#0f172a", marginBottom:2}}>{reg.name}</div>
-        <div style={{fontSize:10, color:"#64748b"}}>{reg.mobile}</div>
-        <div style={{fontSize:10, color:"#64748b"}}>{reg.designation}</div>
-        <div style={{fontSize:10, color:"#64748b", marginBottom:8}}>{reg.company}</div>
-        <div style={{
-          display:"inline-block", background:"#eef2ff", color:"#4f46e5",
-          padding:"3px 10px", borderRadius:20, fontSize:9, fontWeight:700,
-          fontFamily:"monospace", letterSpacing:"0.06em", marginBottom:10
-        }}>{reg.passcode}</div>
-        <div style={{display:"flex", justifyContent:"center"}}>
-          <QRPlaceholder size={64}/>
-        </div>
-      </div>
-      <div style={{
-        background:"linear-gradient(135deg,#6366f1,#4f46e5)",
-        height:24, display:"flex", alignItems:"center", justifyContent:"center"
-      }}>
-        <span style={{color:"rgba(255,255,255,0.7)", fontSize:7, letterSpacing:"0.1em"}}>
-          OFFICIAL PASS
-        </span>
+        display:"inline-block", background:"#eef2ff", color:"#4f46e5",
+        padding:"2px 8px", borderRadius:20, fontSize:8, fontWeight:700,
+        fontFamily:"monospace", letterSpacing:"0.06em", marginBottom:8, width:"fit-content"
+      }}>{reg.passcode}</div>
+      <div style={{display:"flex", justifyContent:"center", marginTop:"auto"}}>
+        <QRPlaceholder size={60}/>
       </div>
     </div>
   );
@@ -321,12 +325,15 @@ function MiniTicket({ reg, bgColor }) {
 
 function ManagementSection() {
   const [search, setSearch]     = useState("");
+  const [eventFilter, setEvent] = useState("All Events");
   const [selected, setSelected] = useState(new Set());
 
-  const filtered = REGISTRATIONS.filter(r =>
-    r.name.toLowerCase().includes(search.toLowerCase()) ||
-    r.company.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = REGISTRATIONS.filter(r => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || r.name.toLowerCase().includes(q) || r.company.toLowerCase().includes(q);
+    const matchEvent  = eventFilter === "All Events" || r.event === eventFilter;
+    return matchSearch && matchEvent;
+  });
 
   const toggleSelect = id =>
     setSelected(prev => {
@@ -341,24 +348,32 @@ function ManagementSection() {
     <div>
       {/* Toolbar */}
       <div style={{
-        display:"flex", gap:12, alignItems:"center", marginBottom:20,
-        flexWrap:"wrap"
+        display:"flex", gap:10, alignItems:"center", marginBottom:20, flexWrap:"wrap"
       }}>
+        {/* Search */}
         <div style={{
-          flex:1, minWidth:200, display:"flex", alignItems:"center", gap:8,
-          background:"#fff", border:"1px solid #e2e8f0", borderRadius:10,
-          padding:"8px 14px"
+          flex:1, minWidth:180, display:"flex", alignItems:"center", gap:8,
+          background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, padding:"8px 12px"
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Search by name or company…"
+            placeholder="Search name or company…"
             style={{border:"none", outline:"none", fontSize:13, color:"#0f172a", width:"100%", background:"transparent"}}/>
         </div>
 
+        {/* Event filter */}
+        <select value={eventFilter} onChange={e=>setEvent(e.target.value)} style={{
+          padding:"8px 12px", border:"1px solid #e2e8f0", borderRadius:10,
+          fontSize:13, color:"#0f172a", background:"#fff", outline:"none",
+          fontWeight:600, cursor:"pointer", minWidth:160
+        }}>
+          {ALL_EVENTS.map(ev => <option key={ev} value={ev}>{ev}</option>)}
+        </select>
+
         <div style={{
-          padding:"6px 14px", background:"#f0f4ff", border:"1px solid #c7d2fe",
+          padding:"6px 12px", background:"#f0f4ff", border:"1px solid #c7d2fe",
           borderRadius:10, fontSize:12, fontWeight:700, color:"#4f46e5"
         }}>
           {filtered.length} tickets
