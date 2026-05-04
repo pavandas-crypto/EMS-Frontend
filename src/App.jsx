@@ -7,7 +7,7 @@ import AdminLayout from "./component/admin/AdminLayout.jsx";
 import AdminDashboard from "./component/admin/AdminDashboard.jsx";
 import EventCreate from "./component/admin/EventCreate.jsx";
 import EventEdit from "./component/admin/EventEdit.jsx";
-import EventManage from "./component/admin/EventManage.jsx";
+import EventManage from "./component/Admin/EventMag.jsx";
 import EventForm from "./component/admin/EventForm.jsx";
 import Registrations from "./component/admin/Registrations.jsx";
 import GenerateTickets from "./component/admin/GenerateTickets.jsx";
