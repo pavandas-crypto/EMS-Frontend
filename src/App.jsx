@@ -23,6 +23,7 @@ function App() {
         <Route path="/verifier" element={<VerifierApp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="events/create" element={<EventCreate />} />
           <Route path="events/manage" element={<EventManage />} />
