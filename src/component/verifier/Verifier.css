@@ -1,0 +1,170 @@
+/* Verifier.css */
+.bento-container {
+  background-color: #f8f9fa; /* Light grey background */
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 2rem 1rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #000;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.bento-header {
+  margin-bottom: 2rem;
+}
+
+.bento-title {
+  font-weight: 800;
+  font-size: 2.5rem;
+  letter-spacing: -0.05em;
+  color: #000;
+}
+
+.bento-subtitle {
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.bento-box {
+  background-color: #fff;
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-box-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.bento-box.black {
+  background-color: #000;
+  color: #fff;
+}
+
+.bento-box.black .text-muted {
+  color: #aaa !important;
+}
+
+.bento-btn {
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.8rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.bento-btn:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.bento-btn-outline {
+  background-color: transparent;
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 0.8rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.bento-btn-outline:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+.bento-input {
+  background-color: #f5f5f5;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 1rem;
+  width: 100%;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.bento-input:focus {
+  outline: none;
+  border-color: #000;
+}
+
+.bento-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.bento-grid-dashboard {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .bento-grid-dashboard {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.active {
+  background-color: #000;
+  color: #fff;
+}
+
+.status-badge.upcoming {
+  background-color: #e0e0e0;
+  color: #000;
+}
+
+/* Custom styling for HTML5 Qrcode Scanner to fit Bento style */
+#reader {
+  border: none !important;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+#reader__dashboard_section_csr span {
+  font-family: 'Inter', sans-serif !important;
+}
+
+#reader button {
+  background-color: #000 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 0.5rem 1rem !important;
+  font-weight: 600 !important;
+  margin: 0.5rem !important;
+}

@@ -1,48 +1,81 @@
-function VerifierApp() {
-  const events = [
-    { title: "Leadership Summit", time: "Jun 3, 2025", location: "City Hall" },
-    { title: "Community Training", time: "Jun 21, 2025", location: "Online" },
-    { title: "Volunteer Orientation", time: "Jul 5, 2025", location: "Youth Center" },
-  ];
+import React, { useState } from 'react';
+import EventSelection from './EventSelection';
+import VerifierDashboard from './dashboard';
+import './Verifier.css';
 
-  return (
-    <div className="page-shell">
-      <section className="section">
-        <div className="card">
-          <div className="card-header panel-header">
-            <div>
-              <p className="panel-label">Verifier portal</p>
-              <h1 className="page-title">Ready to verify attendees</h1>
+function VerifierApp() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username === 'admin' && password === 'admin') {
+      setIsLoggedIn(true);
+      setLoginError('');
+    } else {
+      setLoginError('Invalid credentials. (Hint: admin/admin)');
+    }
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="bento-container d-flex align-items-center justify-content-center">
+        <div className="bento-box black" style={{ maxWidth: '400px', width: '100%', padding: '2.5rem' }}>
+          <div className="text-center mb-4">
+            <h2 className="bento-title text-white mb-2" style={{ fontSize: '2rem' }}>Verifier Login</h2>
+            <p className="bento-subtitle text-muted">Sign in to access scanner</p>
+          </div>
+          
+          <form onSubmit={handleLogin}>
+            <div className="mb-3">
+              <label className="form-label text-white-50 small fw-bold">USERNAME</label>
+              <input 
+                type="text" 
+                className="bento-input" 
+                placeholder="Enter username" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
             </div>
-            <a href="/" className="button button-outline button-sm">
-              Back to site
+            <div className="mb-4">
+              <label className="form-label text-white-50 small fw-bold">PASSWORD</label>
+              <input 
+                type="password" 
+                className="bento-input" 
+                placeholder="Enter password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            
+            {loginError && <div className="text-danger small mb-3">{loginError}</div>}
+            
+            <button type="submit" className="bento-btn w-100" style={{ backgroundColor: '#fff', color: '#000' }}>
+              Sign In
+            </button>
+          </form>
+          
+          <div className="mt-4 text-center">
+            <a href="/" className="text-white-50 text-decoration-none small">
+              &larr; Back to main site
             </a>
           </div>
-          <div className="card-body">
-            <p className="panel-copy">Select an event and follow the verification guidance. The flow is presented as design validation only.</p>
-
-            <div className="section-grid columns-3" style={{ marginTop: "1.5rem" }}>
-              {events.map((event) => (
-                <div key={event.title} className="card" style={{ border: "1px solid rgba(15, 23, 42, 0.08)" }}>
-                  <div className="card-body">
-                    <h3 style={{ margin: 0 }}>{event.title}</h3>
-                    <p className="card-copy" style={{ marginTop: "0.75rem" }}>
-                      {event.time} · {event.location}
-                    </p>
-                    <div style={{ marginTop: "1rem" }}>
-                      <a href="/verifier" className="button button-primary button-sm">
-                        Select event
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-      </section>
-    </div>
-  );
+      </div>
+    );
+  }
+
+  if (!selectedEvent) {
+    return <EventSelection onEventSelect={setSelectedEvent} onLogout={() => setIsLoggedIn(false)} />;
+  }
+
+  return <VerifierDashboard selectedEvent={selectedEvent} onBackToSelection={() => setSelectedEvent(null)} />;
 }
 
 export default VerifierApp;

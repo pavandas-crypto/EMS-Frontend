@@ -91,6 +91,7 @@ select {
 .landing-shell,
 .admin-shell {
   min-height: 100vh;
+  display: flex;
 }
 
 .site-header,
@@ -438,14 +439,15 @@ select {
 
 .admin-shell {
   min-height: 100vh;
+  display: flex;
+  flex-direction: row;
 }
 
 .admin-sidebar {
-  position: fixed;
-  left: 0;
+  position: sticky;
   top: 0;
-  bottom: 0;
   width: 280px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
@@ -453,12 +455,13 @@ select {
   color: #f8fafc;
   overflow-y: auto;
   z-index: 20;
+  height: 100vh;
+  max-height: 100vh;
 }
 
 .admin-sidebar.sticky-sidebar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
 }
 
 .admin-sidebar .brand {
@@ -478,11 +481,13 @@ select {
 }
 
 .admin-main {
+  flex: 1;
   background: var(--color-neutral-50);
   padding: 2rem;
-  margin-left: 280px;
+  overflow-y: auto;
+  height: 100vh;
 }
-
+min-
 .admin-sidebar .brand-icon {
   width: 44px;
   height: 44px;
@@ -500,11 +505,6 @@ select {
   letter-spacing: 0.16em;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.72);
-}
-
-.admin-main {
-  background: var(--color-neutral-50);
-  padding: 2rem;
 }
 
 .admin-tools {
@@ -526,20 +526,22 @@ select {
   font-size: 0.9rem;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .admin-shell {
     min-height: 100vh;
+    flex-direction: column;
   }
   .admin-sidebar {
     position: relative;
     width: 100%;
+    max-height: none;
     height: auto;
     overflow: visible;
     padding: 1.5rem;
   }
   .admin-main {
-    margin-left: 0;
     padding: 1.5rem;
+    min-height: auto;
   }
 }
 

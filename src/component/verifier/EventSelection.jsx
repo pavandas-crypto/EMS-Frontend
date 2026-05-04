@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
+import React from 'react';
+import { Container } from 'react-bootstrap';
 
-const EventSelection = ({ onEventSelect }) => {
-  // Mock events data with more details
+const EventSelection = ({ onEventSelect, onLogout }) => {
   const events = [
     {
       id: 1,
@@ -34,141 +33,76 @@ const EventSelection = ({ onEventSelect }) => {
   ];
 
   return (
-    <Container fluid className="mt-4">
-      {/* Header */}
-      <Row className="mb-5">
-        <Col className="text-center">
-          <h1 className="display-4 text-primary mb-3">
-            <i className="fas fa-calendar-check me-3"></i>
-            Event Verification Portal
-          </h1>
-          <p className="lead text-muted">
-            Select an event to begin ticket verification and attendee check-in
-          </p>
-          <hr className="my-4" />
-        </Col>
-      </Row>
-
-      {/* Events Grid */}
-      <Row className="g-4">
-        {events.map(event => (
-          <Col lg={4} md={6} key={event.id} className="mb-4">
-            <Card className="h-100 shadow-lg border-0 event-card">
-              <Card.Header className="bg-gradient-primary text-white position-relative overflow-hidden"
-                           style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
-                <div className="position-absolute top-0 end-0">
-                  <Badge bg={event.status === 'active' ? 'success' : 'warning'} className="me-2">
-                    {event.status === 'active' ? 'Active' : 'Upcoming'}
-                  </Badge>
-                </div>
-                <h5 className="card-title mb-2">
-                  <i className="fas fa-calendar-alt me-2"></i>
-                  {event.name}
-                </h5>
-                <div className="event-meta">
-                  <small className="d-block mb-1">
-                    <i className="fas fa-clock me-1"></i>
-                    {new Date(event.date).toLocaleDateString('en-IN', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </small>
-                  <small className="d-block">
-                    <i className="fas fa-map-marker-alt me-1"></i>
-                    {event.location}
-                  </small>
-                </div>
-              </Card.Header>
-
-              <Card.Body className="d-flex flex-column">
-                <p className="card-text text-muted mb-3 flex-grow-1">
-                  {event.description}
-                </p>
-
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div className="text-muted">
-                    <i className="fas fa-users me-1"></i>
-                    <small>Expected: {event.attendees} attendees</small>
-                  </div>
-                  <div className="text-muted">
-                    <i className="fas fa-qrcode me-1"></i>
-                    <small>QR Verification</small>
-                  </div>
-                </div>
-
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-100 mt-auto"
-                  onClick={() => onEventSelect(event)}
-                  style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    border: 'none',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
-                  }}
-                >
-                  <i className="fas fa-play-circle me-2"></i>
-                  Start Verification
-                </Button>
-              </Card.Body>
-
-              <Card.Footer className="bg-light text-center">
-                <small className="text-muted">
-                  <i className="fas fa-shield-alt me-1"></i>
-                  Secure QR Code Verification System
-                </small>
-              </Card.Footer>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      {/* Footer Info */}
-      <Row className="mt-5">
-        <Col className="text-center">
-          <div className="bg-light rounded p-4">
-            <h5 className="text-primary mb-3">
-              <i className="fas fa-info-circle me-2"></i>
-              How It Works
-            </h5>
-            <Row className="g-3">
-              <Col md={4}>
-                <div className="text-center">
-                  <div className="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                       style={{width: '50px', height: '50px'}}>
-                    <i className="fas fa-qrcode fa-lg"></i>
-                  </div>
-                  <h6>Scan QR Code</h6>
-                  <small className="text-muted">Use camera to scan attendee QR codes</small>
-                </div>
-              </Col>
-              <Col md={4}>
-                <div className="text-center">
-                  <div className="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                       style={{width: '50px', height: '50px'}}>
-                    <i className="fas fa-check-circle fa-lg"></i>
-                  </div>
-                  <h6>Verify Details</h6>
-                  <small className="text-muted">Instant verification with attendee info</small>
-                </div>
-              </Col>
-              <Col md={4}>
-                <div className="text-center">
-                  <div className="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2"
-                       style={{width: '50px', height: '50px'}}>
-                    <i className="fas fa-chart-line fa-lg"></i>
-                  </div>
-                  <h6>Track Reports</h6>
-                  <small className="text-muted">Monitor check-in statistics</small>
-                </div>
-              </Col>
-            </Row>
+    <div className="bento-container">
+      <Container>
+        <div className="d-flex justify-content-between align-items-center bento-header">
+          <div>
+            <h1 className="bento-title">Select Event</h1>
+            <p className="bento-subtitle">Choose an event to start verifying attendees</p>
           </div>
-        </Col>
-      </Row>
-    </Container>
+          <button onClick={onLogout} className="bento-btn-outline" style={{ padding: '0.5rem 1rem' }}>
+            Logout
+          </button>
+        </div>
+
+        <div className="bento-grid">
+          {events.map((event, index) => (
+            <div 
+              key={event.id} 
+              className={`bento-box bento-box-hover ${index % 2 === 0 ? 'black' : ''}`}
+            >
+              <div className="d-flex justify-content-between align-items-start mb-4">
+                <div className={`status-badge ${event.status === 'active' ? 'active' : 'upcoming'} ${index % 2 === 0 && event.status !== 'active' ? 'bg-light text-dark' : ''}`}>
+                  {event.status === 'active' ? 'Active Now' : 'Upcoming'}
+                </div>
+                <div className={index % 2 === 0 ? 'text-white-50' : 'text-muted'}>
+                  <i className="fas fa-users me-2"></i>
+                  {event.attendees}
+                </div>
+              </div>
+              
+              <h3 className="fw-bold mb-3" style={{ fontSize: '1.5rem', letterSpacing: '-0.02em' }}>
+                {event.name}
+              </h3>
+              
+              <p className={`mb-4 flex-grow-1 ${index % 2 === 0 ? 'text-white-50' : 'text-muted'}`}>
+                {event.description}
+              </p>
+              
+              <div className="mb-4">
+                <div className="d-flex align-items-center mb-2">
+                  <i className="fas fa-calendar-alt me-3" style={{ opacity: 0.7 }}></i>
+                  <span className="fw-medium">
+                    {new Date(event.date).toLocaleDateString('en-IN', {
+                      month: 'short', day: 'numeric', year: 'numeric'
+                    })}
+                  </span>
+                </div>
+                <div className="d-flex align-items-center">
+                  <i className="fas fa-map-marker-alt me-3" style={{ opacity: 0.7 }}></i>
+                  <span className="fw-medium">{event.location}</span>
+                </div>
+              </div>
+              
+              <button 
+                className={index % 2 === 0 ? 'bento-btn w-100 bg-white text-dark' : 'bento-btn w-100'}
+                onClick={() => onEventSelect(event)}
+              >
+                Verify Attendees &rarr;
+              </button>
+            </div>
+          ))}
+          
+          <div className="bento-box d-flex flex-column justify-content-center align-items-center text-center" style={{ border: '2px dashed #ddd', backgroundColor: 'transparent', boxShadow: 'none' }}>
+            <div className="bg-white rounded-circle d-flex align-items-center justify-content-center mb-3" style={{ width: '64px', height: '64px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+              <i className="fas fa-plus fs-4"></i>
+            </div>
+            <h4 className="fw-bold mb-2">More Events</h4>
+            <p className="text-muted small">New events will appear here when assigned to you.</p>
+          </div>
+        </div>
+      </Container>
+    </div>
   );
 };
 
