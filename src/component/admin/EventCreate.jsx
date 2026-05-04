@@ -16,6 +16,48 @@ function EventCreate() {
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("event-details");
 
+  const steps = [
+    { id: "event-details", label: "Event Details" },
+    { id: "registration-form", label: "Registration Form" },
+    { id: "success-page", label: "Success Page" }
+  ];
+
+  const currentStepIndex = steps.findIndex(step => step.id === activeTab);
+
+  const handleNext = () => {
+    if (currentStepIndex < steps.length - 1) {
+      // Validate current step before proceeding
+      if (activeTab === "event-details") {
+        const nextErrors = {};
+
+        if (!formData.title.trim()) nextErrors.title = "Event title is required.";
+        if (!formData.description.trim()) nextErrors.description = "Event description is required.";
+        if (!formData.startDate) nextErrors.startDate = "Start date and time are required.";
+        if (!formData.endDate) nextErrors.endDate = "End date and time are required.";
+        if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
+          nextErrors.endDate = "End time must be later than start time.";
+        }
+        if (!formData.location.trim()) nextErrors.location = "Event location is required.";
+
+        setErrors(nextErrors);
+
+        if (Object.keys(nextErrors).length > 0) {
+          setStatus({ type: "error", message: "Please complete all required fields before proceeding to the next step." });
+          return;
+        }
+      }
+
+      setActiveTab(steps[currentStepIndex + 1].id);
+      setStatus({ type: "", message: "" });
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStepIndex > 0) {
+      setActiveTab(steps[currentStepIndex - 1].id);
+    }
+  };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -75,6 +117,27 @@ function EventCreate() {
             onClick={() => setActiveTab("success-page")}
           >
             Success Page
+          </button>
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="ec-navigation">
+          <button
+            className="button button-secondary"
+            onClick={handlePrevious}
+            disabled={currentStepIndex === 0}
+          >
+            Previous
+          </button>
+          <div className="ec-step-indicator">
+            Step {currentStepIndex + 1} of {steps.length}: {steps[currentStepIndex].label}
+          </div>
+          <button
+            className="button button-primary"
+            onClick={handleNext}
+            disabled={currentStepIndex === steps.length - 1}
+          >
+            Next
           </button>
         </div>
 
@@ -234,6 +297,21 @@ function EventCreate() {
         .ec-tab--active {
           border-bottom-color: #fbbf24;
           color: #111827;
+        }
+
+        .ec-navigation {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          background: #f9fafb;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .ec-step-indicator {
+          font-size: 14px;
+          font-weight: 600;
+          color: #374151;
         }
       `}</style>
     </div>
