@@ -19,11 +19,11 @@ function AdminLayout() {
               Dashboard
             </Link>
           </li>
-          <li>
+          {/* <li>
             <Link className="nav-link" to="events/manage">
               Events
             </Link>
-          </li>
+          </li> */}
           <li>
             <Link className="nav-link" to="registrations">
               Participants
