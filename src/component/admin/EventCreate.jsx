@@ -28,9 +28,10 @@ function EventCreate() {
   });
   const [registrationFields, setRegistrationFields] = useState([]);
   const [successPageConfig, setSuccessPageConfig] = useState(null);
-  const [status, setStatus] = useState({ type: "", message: "", eventId: "" });
+  const [status, setStatus] = useState({ type: "", message: "", eventId: "", landingPageUrl: "" });
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("event-details");
+  const [createdEventId, setCreatedEventId] = useState(null);
 
   const steps = [
     { id: "event-details", label: "Event Details" },
@@ -148,8 +149,12 @@ function EventCreate() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    // This is for form navigation only - actual event creation happens in handleCreateEvent
+  };
 
+  const handleCreateEvent = () => {
     if (!validateForm()) {
+      setActiveTab("event-details");
       return;
     }
 
@@ -174,49 +179,55 @@ function EventCreate() {
 
       const landingPageUrl = `/event/${eventId}`;
       
+      setCreatedEventId(eventId);
       setStatus({
         type: "success",
-        message: `Event "${formData.title}" created successfully! 🎉`,
+        message: `Event "${formData.title}" created successfully! 🎉 Landing page is ready for preview.`,
         eventId: eventId,
         landingPageUrl: landingPageUrl,
-      });
-
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        startDate: "",
-        endDate: "",
-        location: "",
-        capacity: "",
-        entryFee: "",
-        category: "EVENT",
-        additionalInfo: "",
-      });
-      setOrganizer({
-        name: "",
-        email: "",
-        phone: "",
-        role: "Event Organizer",
-        image: "",
       });
     } catch (error) {
       setStatus({
         type: "error",
         message: "Error creating event. Please try again.",
         eventId: "",
+        landingPageUrl: "",
       });
       console.error("Event creation error:", error);
     }
   };
 
-  const handleCreateEvent = () => {
-    if (!validateForm()) {
-      setActiveTab("event-details");
-      return;
+  const handlePreviewLandingPage = () => {
+    if (status.landingPageUrl) {
+      window.open(status.landingPageUrl, '_blank', 'width=1200,height=800');
     }
+  };
 
-    handleSubmit({ preventDefault: () => {} });
+  const handleCreateAnother = () => {
+    // Reset all form data
+    setFormData({
+      title: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      location: "",
+      capacity: "",
+      entryFee: "",
+      category: "EVENT",
+      additionalInfo: "",
+    });
+    setOrganizer({
+      name: "",
+      email: "",
+      phone: "",
+      role: "Event Organizer",
+      image: "",
+    });
+    setRegistrationFields([]);
+    setSuccessPageConfig(null);
+    setStatus({ type: "", message: "", eventId: "", landingPageUrl: "" });
+    setCreatedEventId(null);
+    setActiveTab("event-details");
   };
 
   return (
@@ -293,7 +304,7 @@ function EventCreate() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={(e) => { e.preventDefault(); }}>
                 <div className="form-group">
                   <label htmlFor="title" className="form-label">
                     Event title
@@ -522,10 +533,6 @@ function EventCreate() {
                     </div>
                   </div>
                 </div>
-
-                <button type="submit" className="button button-primary">
-                  Create Event & Generate Landing Page
-                </button>
               </form>
             </>
           )}
@@ -547,21 +554,84 @@ function EventCreate() {
           {activeTab === "success-page" && (
             <>
               <p className="panel-copy">Configure the page participants see after successful registration.</p>
-              <SuccessPageBuilder
-                onSave={(config) => {
-                  setSuccessPageConfig(config);
-                  setStatus({ type: "success", message: "Success page configuration saved successfully!" });
-                }}
-              />
-              <div className="success-action-row">
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={handleCreateEvent}
-                >
-                  Create Event
-                </button>
-              </div>
+              
+              {status.message && (
+                <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
+                  <div>{status.message}</div>
+                  {status.type === "success" && status.eventId && (
+                    <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={handlePreviewLandingPage}
+                        style={{
+                          padding: "0.6rem 1.2rem",
+                          fontSize: "0.95rem",
+                          fontWeight: "600",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Preview Landing Page
+                      </button>
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={handleCreateAnother}
+                        style={{
+                          padding: "0.6rem 1.2rem",
+                          fontSize: "0.95rem",
+                          fontWeight: "600",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="12" y1="5" x2="12" y2="19"/>
+                          <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Create Another Event
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!createdEventId && (
+                <>
+                  <SuccessPageBuilder
+                    onSave={(config) => {
+                      setSuccessPageConfig(config);
+                      setStatus({ type: "success", message: "Success page configuration saved successfully!" });
+                    }}
+                  />
+                  <div className="success-action-row">
+                    <button
+                      type="button"
+                      className="button button-primary"
+                      onClick={handleCreateEvent}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
+                        <polyline points="17 17 12 12 7 17"/>
+                        <polyline points="12 12 12 3"/>
+                      </svg>
+                      Create Event & Generate Landing Page
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
