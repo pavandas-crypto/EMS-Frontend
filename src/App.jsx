@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./component/login.jsx";
 import LandingPage from "./component/eventpage/landingpage.jsx";
+import EventLandingPage from "./component/eventpage/EventLandingPage.jsx";
 import RegisterForm from "./component/eventpage/registerform.jsx";
 import VerifierApp from "./component/verifier/VerifierApp.jsx";
 import AdminLayout from "./component/admin/AdminLayout.jsx";
@@ -19,6 +20,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/event/:eventId" element={<EventLandingPage />} />
+        <Route path="/event/:eventId/register" element={<RegisterForm />} />
         <Route path="/register" element={<RegisterForm />} />
         <Route path="/verifier" element={<VerifierApp />} />
         <Route path="/login" element={<Login />} />

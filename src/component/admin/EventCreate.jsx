@@ -2,6 +2,11 @@ import { useState } from "react";
 import RegistrationFormBuilder from "./RegistrationFormBuilder";
 import SuccessPageBuilder from "./SuccessPageBuilder";
 
+// Utility function to generate unique event ID
+const generateEventId = () => {
+  return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
 function EventCreate() {
   const [formData, setFormData] = useState({
     title: "",
@@ -9,18 +14,35 @@ function EventCreate() {
     startDate: "",
     endDate: "",
     location: "",
+    capacity: "",
+    entryFee: "",
+    category: "EVENT",
+    additionalInfo: "",
+  });
+  const [organizer, setOrganizer] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "Event Organizer",
+    image: "",
   });
   const [registrationFields, setRegistrationFields] = useState([]);
   const [successPageConfig, setSuccessPageConfig] = useState(null);
-  const [status, setStatus] = useState({ type: "", message: "" });
+  const [status, setStatus] = useState({ type: "", message: "", eventId: "" });
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("event-details");
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setStatus({ type: "", message: "" });
+    setStatus({ type: "", message: "", eventId: "" });
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleOrganizerChange = (event) => {
+    const { name, value } = event.target;
+    setOrganizer((prev) => ({ ...prev, [name]: value }));
+    setStatus({ type: "", message: "", eventId: "" });
   };
 
   const handleSubmit = (event) => {
@@ -39,11 +61,65 @@ function EventCreate() {
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
-      setStatus({ type: "error", message: "Please fix the highlighted fields to continue." });
+      setStatus({ type: "error", message: "Please fix the highlighted fields to continue.", eventId: "" });
       return;
     }
 
-    setStatus({ type: "success", message: "Event form is valid. Event creation remains a UI-only demo." });
+    // Create new event object
+    const eventId = generateEventId();
+    const newEvent = {
+      id: eventId,
+      ...formData,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+      entryFee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+      organizer: organizer.name ? organizer : null,
+      registrationFields,
+      successPageConfig,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Store event in localStorage
+    try {
+      const existingEvents = JSON.parse(localStorage.getItem("events")) || [];
+      existingEvents.push(newEvent);
+      localStorage.setItem("events", JSON.stringify(existingEvents));
+
+      const landingPageUrl = `/event/${eventId}`;
+      
+      setStatus({
+        type: "success",
+        message: `Event "${formData.title}" created successfully! 🎉`,
+        eventId: eventId,
+        landingPageUrl: landingPageUrl,
+      });
+
+      // Reset form
+      setFormData({
+        title: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        location: "",
+        capacity: "",
+        entryFee: "",
+        category: "EVENT",
+        additionalInfo: "",
+      });
+      setOrganizer({
+        name: "",
+        email: "",
+        phone: "",
+        role: "Event Organizer",
+        image: "",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: "Error creating event. Please try again.",
+        eventId: "",
+      });
+      console.error("Event creation error:", error);
+    }
   };
 
   return (
@@ -87,6 +163,33 @@ function EventCreate() {
               {status.message && (
                 <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
                   {status.message}
+                  {status.type === "success" && status.eventId && (
+                    <div style={{ marginTop: "1rem" }}>
+                      <p style={{ margin: "0.5rem 0 0" }}>
+                        <strong>Landing Page URL:</strong>
+                      </p>
+                      <a 
+                        href={status.landingPageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-block",
+                          marginTop: "0.5rem",
+                          padding: "0.5rem 1rem",
+                          background: "rgba(255, 255, 255, 0.2)",
+                          borderRadius: "6px",
+                          color: "white",
+                          textDecoration: "none",
+                          fontWeight: "500",
+                          transition: "background 0.2s",
+                        }}
+                        onMouseOver={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
+                        onMouseOut={(e) => e.target.style.background = "rgba(255, 255, 255, 0.2)"}
+                      >
+                        View Event Landing Page →
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -169,8 +272,159 @@ function EventCreate() {
                   {errors.location && <div className="field-error">{errors.location}</div>}
                 </div>
 
+                <div className="section-grid columns-2">
+                  <div className="form-group">
+                    <label htmlFor="category" className="form-label">
+                      Event Category
+                    </label>
+                    <select
+                      id="category"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="input-field"
+                    >
+                      <option value="EVENT">Event</option>
+                      <option value="CONFERENCE">Conference</option>
+                      <option value="WORKSHOP">Workshop</option>
+                      <option value="WEBINAR">Webinar</option>
+                      <option value="MEETUP">Meetup</option>
+                      <option value="GALA">Gala</option>
+                      <option value="TRAINING">Training</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="capacity" className="form-label">
+                      Capacity (Optional)
+                    </label>
+                    <input
+                      id="capacity"
+                      name="capacity"
+                      type="number"
+                      value={formData.capacity}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="Maximum number of attendees"
+                      min="1"
+                    />
+                  </div>
+                </div>
+
+                <div className="section-grid columns-2">
+                  <div className="form-group">
+                    <label htmlFor="entryFee" className="form-label">
+                      Entry Fee (Optional)
+                    </label>
+                    <input
+                      id="entryFee"
+                      name="entryFee"
+                      type="number"
+                      value={formData.entryFee}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="additionalInfo" className="form-label">
+                    Additional Information (Optional)
+                  </label>
+                  <textarea
+                    id="additionalInfo"
+                    name="additionalInfo"
+                    rows="3"
+                    value={formData.additionalInfo}
+                    onChange={handleChange}
+                    className="textarea-field"
+                    placeholder="Any additional details about the event..."
+                  />
+                </div>
+
+                {/* Organizer Section */}
+                <div style={{
+                  padding: "1.5rem",
+                  background: "#f9fafb",
+                  borderRadius: "8px",
+                  marginTop: "2rem",
+                  marginBottom: "1rem",
+                  border: "1px solid #e5e7eb"
+                }}>
+                  <h3 style={{
+                    fontSize: "1.1rem",
+                    fontWeight: "700",
+                    marginBottom: "1rem",
+                    color: "#111827"
+                  }}>Organizer Information (Optional)</h3>
+
+                  <div className="section-grid columns-2">
+                    <div className="form-group">
+                      <label htmlFor="organizer-name" className="form-label">
+                        Organizer Name
+                      </label>
+                      <input
+                        id="organizer-name"
+                        name="name"
+                        value={organizer.name}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="Your name or organization"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="organizer-role" className="form-label">
+                        Role/Title
+                      </label>
+                      <input
+                        id="organizer-role"
+                        name="role"
+                        value={organizer.role}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="e.g., Event Manager"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="section-grid columns-2">
+                    <div className="form-group">
+                      <label htmlFor="organizer-email" className="form-label">
+                        Email
+                      </label>
+                      <input
+                        id="organizer-email"
+                        name="email"
+                        type="email"
+                        value={organizer.email}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="contact@example.com"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="organizer-phone" className="form-label">
+                        Phone
+                      </label>
+                      <input
+                        id="organizer-phone"
+                        name="phone"
+                        value={organizer.phone}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="+1 (555) 000-0000"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <button type="submit" className="button button-primary">
-                  Validate event details
+                  Create Event & Generate Landing Page
                 </button>
               </form>
             </>
