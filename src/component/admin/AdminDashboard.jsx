@@ -230,8 +230,8 @@ function AdminDashboard() {
                             <Link to={`/admin/events/edit/${event.event_id}`} className="ems-action-btn" title="Edit event">
                               <i className="bi bi-pencil"></i>
                             </Link>
-                            <Link to={`/admin/events/${event.event_id}/form`} className="ems-action-btn" title="View form">
-                              <i className="bi bi-file-text"></i>
+                            <Link to={`/admin/events/${event.event_id}/form`} className="ems-action-btn" title="Preview">
+                              <i className="bi bi-eye"></i>
                             </Link>
                             <Link to={`/admin/registrations?event_id=${event.event_id}`} className="ems-action-btn" title="Registrations">
                               <i className="bi bi-people"></i>

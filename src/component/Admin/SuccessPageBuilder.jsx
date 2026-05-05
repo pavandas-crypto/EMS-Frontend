@@ -4,11 +4,7 @@ export default function SuccessPageBuilder({ onSave }) {
   const [successConfig, setSuccessConfig] = useState({
     title: "Registration Successful!",
     message: "Thank you for registering for our event. We look forward to seeing you there!",
-    showQRCode: true,
-    showTicket: true,
     displayFields: ["participant_name", "email", "mobile_number"],
-    buttonText: "Download Ticket",
-    buttonLink: "/tickets",
   });
 
   const availableFields = [
@@ -68,25 +64,6 @@ export default function SuccessPageBuilder({ onSave }) {
           />
         </div>
 
-        <div className="spb-checkbox-group">
-          <label className="spb-checkbox-label">
-            <input
-              type="checkbox"
-              checked={successConfig.showQRCode}
-              onChange={(e) => handleFieldChange("showQRCode", e.target.checked)}
-            />
-            <span>Show QR Code</span>
-          </label>
-          <label className="spb-checkbox-label">
-            <input
-              type="checkbox"
-              checked={successConfig.showTicket}
-              onChange={(e) => handleFieldChange("showTicket", e.target.checked)}
-            />
-            <span>Show Ticket/Badge</span>
-          </label>
-        </div>
-
         <div className="form-group">
           <label className="form-label">Display Registered Information</label>
           <p className="form-note">Select which participant fields to display on success page</p>
@@ -104,41 +81,11 @@ export default function SuccessPageBuilder({ onSave }) {
           </div>
         </div>
 
-        <div className="section-grid columns-2">
-          <div className="form-group">
-            <label className="form-label">Button Text</label>
-            <input
-              type="text"
-              className="input-field"
-              value={successConfig.buttonText}
-              onChange={(e) => handleFieldChange("buttonText", e.target.value)}
-              placeholder="e.g., Download Ticket"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Button Link</label>
-            <input
-              type="text"
-              className="input-field"
-              value={successConfig.buttonLink}
-              onChange={(e) => handleFieldChange("buttonLink", e.target.value)}
-              placeholder="e.g., /tickets"
-            />
-          </div>
-        </div>
-
         <div className="spb-preview">
           <h4 className="spb-preview-title">Preview</h4>
           <div className="spb-preview-box">
             <h2 style={{ color: "#111827", marginBottom: "8px" }}>{successConfig.title}</h2>
             <p style={{ color: "#6b7280", marginBottom: "16px" }}>{successConfig.message}</p>
-
-            {successConfig.showQRCode && (
-              <div className="spb-preview-item">
-                <div className="spb-preview-qr">QR Code</div>
-              </div>
-            )}
 
             {successConfig.displayFields.length > 0 && (
               <div className="spb-preview-item">
@@ -153,14 +100,6 @@ export default function SuccessPageBuilder({ onSave }) {
                 })}
               </div>
             )}
-
-            <button
-              className="button button-primary"
-              style={{ width: "100%", marginTop: "16px" }}
-              disabled
-            >
-              {successConfig.buttonText}
-            </button>
           </div>
         </div>
       </div>
