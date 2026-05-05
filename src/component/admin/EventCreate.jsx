@@ -43,18 +43,45 @@ function EventCreate() {
 
         if (Object.keys(nextErrors).length > 0) {
           setStatus({ type: "error", message: "Please complete all required fields before proceeding to the next step." });
+          // Scroll to first error field
+          setTimeout(() => {
+            const firstErrorField = Object.keys(nextErrors)[0];
+            const element = document.getElementById(firstErrorField);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.focus();
+            }
+          }, 100);
           return;
         }
       }
 
       setActiveTab(steps[currentStepIndex + 1].id);
       setStatus({ type: "", message: "" });
+      // Scroll to top of new tab
+      setTimeout(() => {
+        const cardElement = document.querySelector('.card');
+        if (cardElement) {
+          cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
     }
   };
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
       setActiveTab(steps[currentStepIndex - 1].id);
+      // Scroll to top of new tab
+      setTimeout(() => {
+        const cardElement = document.querySelector('.card');
+        if (cardElement) {
+          cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
     }
   };
 
@@ -65,8 +92,7 @@ function EventCreate() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const validateForm = () => {
     const nextErrors = {};
 
     if (!formData.title.trim()) nextErrors.title = "Event title is required.";
@@ -82,10 +108,39 @@ function EventCreate() {
 
     if (Object.keys(nextErrors).length > 0) {
       setStatus({ type: "error", message: "Please fix the highlighted fields to continue." });
+      // Scroll to first error field
+      setTimeout(() => {
+        const firstErrorField = Object.keys(nextErrors)[0];
+        const element = document.getElementById(firstErrorField);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.focus();
+        }
+      }, 100);
+      return false;
+    }
+
+    setStatus({ type: "", message: "" });
+    return true;
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    if (!validateForm()) {
       return;
     }
 
     setStatus({ type: "success", message: "Event form is valid. Event creation remains a UI-only demo." });
+  };
+
+  const handleCreateEvent = () => {
+    if (!validateForm()) {
+      setActiveTab("event-details");
+      return;
+    }
+
+    setStatus({ type: "success", message: "Event created successfully! This is a UI-only demo." });
   };
 
   return (
@@ -101,43 +156,25 @@ function EventCreate() {
         {/* Tabs */}
         <div className="ec-tabs">
           <button
+            type="button"
             className={`ec-tab ${activeTab === "event-details" ? "ec-tab--active" : ""}`}
-            onClick={() => setActiveTab("event-details")}
+            disabled
           >
             Event Details
           </button>
           <button
+            type="button"
             className={`ec-tab ${activeTab === "registration-form" ? "ec-tab--active" : ""}`}
-            onClick={() => setActiveTab("registration-form")}
+            disabled
           >
             Registration Form
           </button>
           <button
+            type="button"
             className={`ec-tab ${activeTab === "success-page" ? "ec-tab--active" : ""}`}
-            onClick={() => setActiveTab("success-page")}
+            disabled
           >
             Success Page
-          </button>
-        </div>
-
-        {/* Navigation Buttons */}
-        <div className="ec-navigation">
-          <button
-            className="button button-secondary"
-            onClick={handlePrevious}
-            disabled={currentStepIndex === 0}
-          >
-            Previous
-          </button>
-          <div className="ec-step-indicator">
-            Step {currentStepIndex + 1} of {steps.length}: {steps[currentStepIndex].label}
-          </div>
-          <button
-            className="button button-primary"
-            onClick={handleNext}
-            disabled={currentStepIndex === steps.length - 1}
-          >
-            Next
           </button>
         </div>
 
@@ -231,10 +268,6 @@ function EventCreate() {
                   />
                   {errors.location && <div className="field-error">{errors.location}</div>}
                 </div>
-
-                <button type="submit" className="button button-primary">
-                  Validate event details
-                </button>
               </form>
             </>
           )}
@@ -262,8 +295,44 @@ function EventCreate() {
                   setStatus({ type: "success", message: "Success page configuration saved successfully!" });
                 }}
               />
+              <div className="success-action-row">
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={handleCreateEvent}
+                >
+                  Create Event
+                </button>
+              </div>
             </>
           )}
+        </div>
+
+        {/* Footer Navigation */}
+        <div className="ec-footer">
+          <button
+            className="button button-secondary ec-nav-button"
+            onClick={handlePrevious}
+            disabled={currentStepIndex === 0}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+            Previous
+          </button>
+          <div className="ec-step-indicator">
+            Step {currentStepIndex + 1} of {steps.length}: {steps[currentStepIndex].label}
+          </div>
+          <button
+            className="button button-primary ec-nav-button"
+            onClick={handleNext}
+            disabled={currentStepIndex === steps.length - 1}
+          >
+            Next
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -294,6 +363,12 @@ function EventCreate() {
           background: #f3f4f6;
         }
 
+        .ec-tab:disabled {
+          cursor: default;
+          opacity: 1;
+          background: transparent;
+        }
+
         .ec-tab--active {
           border-bottom-color: #fbbf24;
           color: #111827;
@@ -308,10 +383,60 @@ function EventCreate() {
           border-bottom: 1px solid #e5e7eb;
         }
 
+        .ec-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px;
+          background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-neutral-50) 100%);
+          border-top: 1px solid var(--color-neutral-200);
+          border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+          box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+        }
+
         .ec-step-indicator {
           font-size: 14px;
           font-weight: 600;
-          color: #374151;
+          color: var(--color-neutral-700);
+          background: rgba(255, 255, 255, 0.8);
+          padding: 8px 16px;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--color-neutral-200);
+        }
+
+        .ec-nav-button {
+          min-width: 120px;
+          font-weight: 600;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .ec-nav-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+          transition: left 0.5s;
+        }
+
+        .ec-nav-button:hover::before {
+          left: 100%;
+        }
+
+        .ec-nav-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .success-action-row {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 1.5rem;
         }
       `}</style>
     </div>
