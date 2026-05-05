@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const TEMPLATES = [
   {
@@ -9,6 +9,7 @@ const TEMPLATES = [
       { id:"mobile",      label:"Mobile",       x:20, y:62,  fontSize:13, bold:false, color:"#64748b" },
       { id:"designation", label:"Designation",  x:20, y:82,  fontSize:13, bold:false, color:"#64748b" },
       { id:"company",     label:"Company Name", x:20, y:102, fontSize:13, bold:false, color:"#64748b" },
+      { id:"event",       label:"Event Name", x:20, y:122, fontSize:12, bold:false, color:"#64748b" },
       { id:"passcode",    label:"PASS-001234",  x:20, y:140, fontSize:13, bold:true,  color:"#4f46e5", visible:true },
       { id:"qr",          label:"QR",           x:95, y:200, fontSize:12, bold:false, color:"#0f172a", visible:true },
     ],
@@ -21,6 +22,7 @@ const TEMPLATES = [
       { id:"mobile",      label:"Mobile",       x:20, y:62,  fontSize:13, bold:false, color:"#94a3b8" },
       { id:"designation", label:"Designation",  x:20, y:82,  fontSize:13, bold:false, color:"#94a3b8" },
       { id:"company",     label:"Company Name", x:20, y:102, fontSize:13, bold:false, color:"#94a3b8" },
+      { id:"event",       label:"Tech Conference", x:20, y:122, fontSize:12, bold:false, color:"#94a3b8" },
       { id:"passcode",    label:"PASS-001234",  x:20, y:140, fontSize:13, bold:true,  color:"#a5b4fc", visible:true },
       { id:"qr",          label:"QR",           x:95, y:200, fontSize:12, bold:false, color:"#f8fafc", visible:true },
     ],
@@ -33,6 +35,7 @@ const TEMPLATES = [
       { id:"mobile",      label:"Mobile",       x:20, y:62,  fontSize:13, bold:false, color:"#3b82f6" },
       { id:"designation", label:"Designation",  x:20, y:82,  fontSize:13, bold:false, color:"#3b82f6" },
       { id:"company",     label:"Company Name", x:20, y:102, fontSize:13, bold:false, color:"#3b82f6" },
+      { id:"event",       label:"Developer Hackathon", x:20, y:122, fontSize:12, bold:false, color:"#3b82f6" },
       { id:"passcode",    label:"PASS-001234",  x:20, y:140, fontSize:13, bold:true,  color:"#1d4ed8", visible:true },
       { id:"qr",          label:"QR",           x:95, y:200, fontSize:12, bold:false, color:"#1e3a8a", visible:true },
     ],
@@ -67,7 +70,7 @@ const QRPlaceholder = ({ size = 120 }) => (
   </svg>
 );
 
-function TicketCanvas({ bgColor, bgImage, selectedId, onSelect, fields }) {
+function TicketCanvas({ bgColor, bgImage, selectedId, onSelect, onDragStart, draggingId, fields }) {
   return (
     <div style={{
       width:360, height:560, borderRadius:16, overflow:"hidden", position:"relative",
@@ -76,12 +79,18 @@ function TicketCanvas({ bgColor, bgImage, selectedId, onSelect, fields }) {
       border:"1px solid rgba(148,163,184,0.2)", padding:16
     }}>
       {fields.filter(f=>f.visible!==false).map(f => (
-        <div key={f.id} onClick={()=>onSelect(f.id)} style={{
-          position:"absolute", left:f.x, top:f.y,
-          cursor:"pointer", userSelect:"none",
-          outline: selectedId===f.id ? "2px dashed #6366f1" : "2px solid transparent",
-          outlineOffset:4, borderRadius:4, padding:"2px 4px"
-        }}>
+        <div key={f.id} onMouseDown={(event)=>{
+            if (event.button !== 0) return;
+            onSelect(f.id);
+            if (onDragStart) onDragStart(f, event);
+          }}
+          onClick={()=>onSelect(f.id)}
+          style={{
+            position:"absolute", left:f.x, top:f.y,
+            cursor: draggingId===f.id ? "grabbing" : "grab", userSelect:"none",
+            outline: selectedId===f.id ? "2px dashed #6366f1" : "2px solid transparent",
+            outlineOffset:4, borderRadius:4, padding:"2px 4px"
+          }}>
           {f.id==="qr"
             ? <QRPlaceholder size={150}/>
             : <span style={{ fontSize:f.fontSize, fontWeight:f.bold?"700":"400", color:f.color }}>
@@ -107,6 +116,7 @@ function DesignerSection() {
   const [bgColor, setBgColor]     = useState(tpl.bgColor);
   const [bgImage, setBgImage]     = useState(null);
   const [saved, setSaved]         = useState(false);
+  const [dragState, setDragState] = useState(null);
 
   const applyTemplate = (id) => {
     const t = TEMPLATES.find(x => x.id === id);
@@ -117,6 +127,29 @@ function DesignerSection() {
   const sel = fields.find(f=>f.id===selected);
   const update = (id, key, val) =>
     setFields(prev=>prev.map(f=>f.id===id?{...f,[key]:val}:f));
+
+  useEffect(() => {
+    if (!dragState) return undefined;
+
+    const onMouseMove = (event) => {
+      const dx = event.clientX - dragState.startX;
+      const dy = event.clientY - dragState.startY;
+      update(dragState.id, "x", Math.max(0, dragState.origX + dx));
+      update(dragState.id, "y", Math.max(0, dragState.origY + dy));
+    };
+
+    const onMouseUp = () => setDragState(null);
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    document.body.style.cursor = "grabbing";
+
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "";
+    };
+  }, [dragState]);
 
   return (
     <div style={{display:"flex", flexDirection:"column", gap:16}}>
@@ -160,7 +193,7 @@ function DesignerSection() {
                 onChange={e=>update(f.id,"visible",e.target.checked)}
                 style={{accentColor:"#6366f1", width:14, height:14}}/>
               <span style={{fontSize:12.5, fontWeight:600, color: f.visible===false?"#94a3b8":"#1e293b"}}>
-                {f.id==="qr"?"QR Code":f.id.charAt(0).toUpperCase()+f.id.slice(1)}
+                {f.id==="qr"?"QR Code":f.id==="event"?"Event Name":f.id.charAt(0).toUpperCase()+f.id.slice(1)}
               </span>
             </label>
           ))}
@@ -229,7 +262,18 @@ function DesignerSection() {
         </div>
         <TicketCanvas
           bgColor={bgColor} bgImage={bgImage}
-          selectedId={selected} onSelect={setSelected} fields={fields}
+          selectedId={selected} onSelect={setSelected} onDragStart={(field,event)=>{
+            setSelected(field.id);
+            setDragState({
+              id: field.id,
+              startX: event.clientX,
+              startY: event.clientY,
+              origX: field.x,
+              origY: field.y
+            });
+          }}
+          draggingId={dragState?.id}
+          fields={fields}
         />
       </div>
 

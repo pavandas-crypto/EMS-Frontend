@@ -638,29 +638,37 @@ function EventCreate() {
 
         {/* Footer Navigation */}
         <div className="ec-footer">
-          <button
-            className="button button-secondary ec-nav-button"
-            onClick={handlePrevious}
-            disabled={currentStepIndex === 0}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-            Previous
-          </button>
+          {currentStepIndex > 0 && (
+            <button
+              className="button button-secondary ec-nav-button"
+              onClick={handlePrevious}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 18l-6-6 6-6"/>
+              </svg>
+              Previous
+            </button>
+          )}
+          {currentStepIndex === 0 && (
+            <div style={{ width: "120px" }}></div>
+          )}
           <div className="ec-step-indicator">
             Step {currentStepIndex + 1} of {steps.length}: {steps[currentStepIndex].label}
           </div>
-          <button
-            className="button button-primary ec-nav-button"
-            onClick={handleNext}
-            disabled={currentStepIndex === steps.length - 1}
-          >
-            Next
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 18l6-6-6-6"/>
-            </svg>
-          </button>
+          {currentStepIndex < steps.length - 1 && (
+            <button
+              className="button button-primary ec-nav-button"
+              onClick={handleNext}
+            >
+              Next
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </button>
+          )}
+          {currentStepIndex === steps.length - 1 && (
+            <div style={{ width: "120px" }}></div>
+          )}
         </div>
       </div>
 
