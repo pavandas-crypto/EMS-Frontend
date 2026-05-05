@@ -2,6 +2,11 @@ import { useState } from "react";
 import RegistrationFormBuilder from "./RegistrationFormBuilder";
 import SuccessPageBuilder from "./SuccessPageBuilder";
 
+// Utility function to generate unique event ID
+const generateEventId = () => {
+  return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
 function EventCreate() {
   const [formData, setFormData] = useState({
     title: "",
@@ -9,12 +14,24 @@ function EventCreate() {
     startDate: "",
     endDate: "",
     location: "",
+    capacity: "",
+    entryFee: "",
+    category: "EVENT",
+    additionalInfo: "",
+  });
+  const [organizer, setOrganizer] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "Event Organizer",
+    image: "",
   });
   const [registrationFields, setRegistrationFields] = useState([]);
   const [successPageConfig, setSuccessPageConfig] = useState(null);
-  const [status, setStatus] = useState({ type: "", message: "" });
+  const [status, setStatus] = useState({ type: "", message: "", eventId: "", landingPageUrl: "" });
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("event-details");
+  const [createdEventId, setCreatedEventId] = useState(null);
 
   const steps = [
     { id: "event-details", label: "Event Details" },
@@ -88,8 +105,14 @@ function EventCreate() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setStatus({ type: "", message: "" });
+    setStatus({ type: "", message: "", eventId: "" });
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleOrganizerChange = (event) => {
+    const { name, value } = event.target;
+    setOrganizer((prev) => ({ ...prev, [name]: value }));
+    setStatus({ type: "", message: "", eventId: "" });
   };
 
   const validateForm = () => {
@@ -107,7 +130,7 @@ function EventCreate() {
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
-      setStatus({ type: "error", message: "Please fix the highlighted fields to continue." });
+      setStatus({ type: "error", message: "Please fix the highlighted fields to continue.", eventId: "" });
       // Scroll to first error field
       setTimeout(() => {
         const firstErrorField = Object.keys(nextErrors)[0];
@@ -126,12 +149,7 @@ function EventCreate() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setStatus({ type: "success", message: "Event form is valid. Event creation remains a UI-only demo." });
+    // This is for form navigation only - actual event creation happens in handleCreateEvent
   };
 
   const handleCreateEvent = () => {
@@ -140,7 +158,76 @@ function EventCreate() {
       return;
     }
 
-    setStatus({ type: "success", message: "Event created successfully! This is a UI-only demo." });
+    // Create new event object
+    const eventId = generateEventId();
+    const newEvent = {
+      id: eventId,
+      ...formData,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+      entryFee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+      organizer: organizer.name ? organizer : null,
+      registrationFields,
+      successPageConfig,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Store event in localStorage
+    try {
+      const existingEvents = JSON.parse(localStorage.getItem("events")) || [];
+      existingEvents.push(newEvent);
+      localStorage.setItem("events", JSON.stringify(existingEvents));
+
+      const landingPageUrl = `/event/${eventId}`;
+      
+      setCreatedEventId(eventId);
+      setStatus({
+        type: "success",
+        message: `Event "${formData.title}" created successfully! 🎉 Landing page is ready for preview.`,
+        eventId: eventId,
+        landingPageUrl: landingPageUrl,
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: "Error creating event. Please try again.",
+        eventId: "",
+        landingPageUrl: "",
+      });
+      console.error("Event creation error:", error);
+    }
+  };
+
+  const handlePreviewLandingPage = () => {
+    if (status.landingPageUrl) {
+      window.open(status.landingPageUrl, '_blank', 'width=1200,height=800');
+    }
+  };
+
+  const handleCreateAnother = () => {
+    // Reset all form data
+    setFormData({
+      title: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      location: "",
+      capacity: "",
+      entryFee: "",
+      category: "EVENT",
+      additionalInfo: "",
+    });
+    setOrganizer({
+      name: "",
+      email: "",
+      phone: "",
+      role: "Event Organizer",
+      image: "",
+    });
+    setRegistrationFields([]);
+    setSuccessPageConfig(null);
+    setStatus({ type: "", message: "", eventId: "", landingPageUrl: "" });
+    setCreatedEventId(null);
+    setActiveTab("event-details");
   };
 
   return (
@@ -187,10 +274,37 @@ function EventCreate() {
               {status.message && (
                 <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
                   {status.message}
+                  {status.type === "success" && status.eventId && (
+                    <div style={{ marginTop: "1rem" }}>
+                      <p style={{ margin: "0.5rem 0 0" }}>
+                        <strong>Landing Page URL:</strong>
+                      </p>
+                      <a 
+                        href={status.landingPageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{
+                          display: "inline-block",
+                          marginTop: "0.5rem",
+                          padding: "0.5rem 1rem",
+                          background: "rgba(255, 255, 255, 0.2)",
+                          borderRadius: "6px",
+                          color: "white",
+                          textDecoration: "none",
+                          fontWeight: "500",
+                          transition: "background 0.2s",
+                        }}
+                        onMouseOver={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
+                        onMouseOut={(e) => e.target.style.background = "rgba(255, 255, 255, 0.2)"}
+                      >
+                        View Event Landing Page →
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={(e) => { e.preventDefault(); }}>
                 <div className="form-group">
                   <label htmlFor="title" className="form-label">
                     Event title
@@ -268,6 +382,157 @@ function EventCreate() {
                   />
                   {errors.location && <div className="field-error">{errors.location}</div>}
                 </div>
+
+                <div className="section-grid columns-2">
+                  <div className="form-group">
+                    <label htmlFor="category" className="form-label">
+                      Event Category
+                    </label>
+                    <select
+                      id="category"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="input-field"
+                    >
+                      <option value="EVENT">Event</option>
+                      <option value="CONFERENCE">Conference</option>
+                      <option value="WORKSHOP">Workshop</option>
+                      <option value="WEBINAR">Webinar</option>
+                      <option value="MEETUP">Meetup</option>
+                      <option value="GALA">Gala</option>
+                      <option value="TRAINING">Training</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="capacity" className="form-label">
+                      Capacity (Optional)
+                    </label>
+                    <input
+                      id="capacity"
+                      name="capacity"
+                      type="number"
+                      value={formData.capacity}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="Maximum number of attendees"
+                      min="1"
+                    />
+                  </div>
+                </div>
+
+                <div className="section-grid columns-2">
+                  <div className="form-group">
+                    <label htmlFor="entryFee" className="form-label">
+                      Entry Fee (Optional)
+                    </label>
+                    <input
+                      id="entryFee"
+                      name="entryFee"
+                      type="number"
+                      value={formData.entryFee}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="additionalInfo" className="form-label">
+                    Additional Information (Optional)
+                  </label>
+                  <textarea
+                    id="additionalInfo"
+                    name="additionalInfo"
+                    rows="3"
+                    value={formData.additionalInfo}
+                    onChange={handleChange}
+                    className="textarea-field"
+                    placeholder="Any additional details about the event..."
+                  />
+                </div>
+
+                {/* Organizer Section */}
+                <div style={{
+                  padding: "1.5rem",
+                  background: "#f9fafb",
+                  borderRadius: "8px",
+                  marginTop: "2rem",
+                  marginBottom: "1rem",
+                  border: "1px solid #e5e7eb"
+                }}>
+                  <h3 style={{
+                    fontSize: "1.1rem",
+                    fontWeight: "700",
+                    marginBottom: "1rem",
+                    color: "#111827"
+                  }}>Organizer Information (Optional)</h3>
+
+                  <div className="section-grid columns-2">
+                    <div className="form-group">
+                      <label htmlFor="organizer-name" className="form-label">
+                        Organizer Name
+                      </label>
+                      <input
+                        id="organizer-name"
+                        name="name"
+                        value={organizer.name}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="Your name or organization"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="organizer-role" className="form-label">
+                        Role/Title
+                      </label>
+                      <input
+                        id="organizer-role"
+                        name="role"
+                        value={organizer.role}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="e.g., Event Manager"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="section-grid columns-2">
+                    <div className="form-group">
+                      <label htmlFor="organizer-email" className="form-label">
+                        Email
+                      </label>
+                      <input
+                        id="organizer-email"
+                        name="email"
+                        type="email"
+                        value={organizer.email}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="contact@example.com"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="organizer-phone" className="form-label">
+                        Phone
+                      </label>
+                      <input
+                        id="organizer-phone"
+                        name="phone"
+                        value={organizer.phone}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="+1 (555) 000-0000"
+                      />
+                    </div>
+                  </div>
+                </div>
               </form>
             </>
           )}
@@ -289,21 +554,84 @@ function EventCreate() {
           {activeTab === "success-page" && (
             <>
               <p className="panel-copy">Configure the page participants see after successful registration.</p>
-              <SuccessPageBuilder
-                onSave={(config) => {
-                  setSuccessPageConfig(config);
-                  setStatus({ type: "success", message: "Success page configuration saved successfully!" });
-                }}
-              />
-              <div className="success-action-row">
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={handleCreateEvent}
-                >
-                  Create Event
-                </button>
-              </div>
+              
+              {status.message && (
+                <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
+                  <div>{status.message}</div>
+                  {status.type === "success" && status.eventId && (
+                    <div style={{ marginTop: "1rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="button button-primary"
+                        onClick={handlePreviewLandingPage}
+                        style={{
+                          padding: "0.6rem 1.2rem",
+                          fontSize: "0.95rem",
+                          fontWeight: "600",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Preview Landing Page
+                      </button>
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        onClick={handleCreateAnother}
+                        style={{
+                          padding: "0.6rem 1.2rem",
+                          fontSize: "0.95rem",
+                          fontWeight: "600",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="12" y1="5" x2="12" y2="19"/>
+                          <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Create Another Event
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!createdEventId && (
+                <>
+                  <SuccessPageBuilder
+                    onSave={(config) => {
+                      setSuccessPageConfig(config);
+                      setStatus({ type: "success", message: "Success page configuration saved successfully!" });
+                    }}
+                  />
+                  <div className="success-action-row">
+                    <button
+                      type="button"
+                      className="button button-primary"
+                      onClick={handleCreateEvent}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>
+                        <polyline points="17 17 12 12 7 17"/>
+                        <polyline points="12 12 12 3"/>
+                      </svg>
+                      Create Event & Generate Landing Page
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
