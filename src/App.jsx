@@ -4,16 +4,16 @@ import LandingPage from "./component/eventpage/landingpage.jsx";
 import EventLandingPage from "./component/eventpage/EventLandingPage.jsx";
 import RegisterForm from "./component/eventpage/registerform.jsx";
 import VerifierApp from "./component/verifier/VerifierApp.jsx";
-import AdminLayout from "./component/admin/AdminLayout.jsx";
-import AdminDashboard from "./component/admin/AdminDashboard.jsx";
-import EventCreate from "./component/admin/EventCreate.jsx";
-import EventEdit from "./component/admin/EventEdit.jsx";
+import AdminLayout from "./component/Admin/AdminLayout.jsx";
+import AdminDashboard from "./component/Admin/AdminDashboard.jsx";
+import EventCreate from "./component/Admin/EventCreate.jsx";
+import EventEdit from "./component/Admin/EventEdit.jsx";
 import EventManage from "./component/Admin/EventMag.jsx";
-import EventForm from "./component/admin/EventForm.jsx";
-import Registrations from "./component/admin/Registrations.jsx";
-import GenerateTickets from "./component/admin/GenerateTickets.jsx";
-import Verifiers from "./component/admin/Verifiers.jsx";
-import Report from "./component/admin/Report.jsx";
+import EventForm from "./component/Admin/EventForm.jsx";
+import Registrations from "./component/Admin/Registrations.jsx";
+import GenerateTickets from "./component/Admin/GenerateTickets.jsx";
+import Verifiers from "./component/Admin/Verifiers.jsx";
+import Report from "./component/Admin/Report.jsx";
 
 function App() {
   return (

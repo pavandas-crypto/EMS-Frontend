@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./landing.css";
+import api from "../../api/api";
 
 const NAV_LINKS = [
   { label: "Features", href: "#features" },
@@ -82,12 +83,6 @@ const STEPS = [
   { num: "04", title: "Verify & Check-in", desc: "Scan QR codes at the door for instant verification. Zero queues, zero friction." },
 ];
 
-const UPCOMING_EVENTS = [
-  { tag: "Conference", date: "May 15, 2025", title: "Spring Leadership Summit", venue: "Grand Hyatt, Mumbai", slots: 42 },
-  { tag: "Workshop", date: "Jun 3, 2025", title: "Digital Innovation Workshop", venue: "TSSIA Hall, Thane", slots: 18 },
-  { tag: "Gala", date: "Jul 20, 2025", title: "Community Impact Gala", venue: "Royal Meridien, Pune", slots: 120 },
-];
-
 function Counter({ target }) {
   const [count, setCount] = useState(0);
   const numeric = parseInt(target.replace(/\D/g, ""), 10);
@@ -111,10 +106,34 @@ function Counter({ target }) {
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
+
+    const fetchEvents = async () => {
+      try {
+        const response = await api.getEvents(1, 3);
+        if (response.success) {
+          setEvents(response.data.map(ev => ({
+            id: ev.event_id,
+            tag: ev.event_for === "all" ? "Public" : "Members",
+            date: new Date(ev.start_date_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+            title: ev.event_name,
+            venue: ev.address,
+            slots: ev.max_capacity ? ev.max_capacity - (ev.registration_count || 0) : "Open"
+          })));
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -264,26 +283,32 @@ export default function LandingPage() {
             <h2 className="lp-section__title">Upcoming events</h2>
           </div>
           <div className="lp-events__grid">
-            {UPCOMING_EVENTS.map(ev => (
-              <div key={ev.title} className="lp-event-card">
-                <div className="lp-event-card__top">
-                  <span className="lp-event-tag">{ev.tag}</span>
-                  <span className="lp-event-date">
-                    <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" style={{marginRight:4,verticalAlign:"middle"}}><path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
-                    {ev.date}
-                  </span>
+            {loading ? (
+              <div className="lp-loading">Loading events...</div>
+            ) : events.length > 0 ? (
+              events.map(ev => (
+                <div key={ev.id} className="lp-event-card">
+                  <div className="lp-event-card__top">
+                    <span className="lp-event-tag">{ev.tag}</span>
+                    <span className="lp-event-date">
+                      <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" style={{marginRight:4,verticalAlign:"middle"}}><path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm-5 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                      {ev.date}
+                    </span>
+                  </div>
+                  <h3 className="lp-event-card__title">{ev.title}</h3>
+                  <p className="lp-event-card__venue">
+                    <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" style={{marginRight:4,verticalAlign:"middle"}}><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+                    {ev.venue}
+                  </p>
+                  <div className="lp-event-card__footer">
+                    <span className="lp-event-slots"><span className="lp-event-slots__dot" />{ev.slots} {ev.slots === 'Open' ? '' : 'slots left'}</span>
+                    <a href={`/event/${ev.id}`} className="lp-btn lp-btn--sm lp-btn--primary">View Details</a>
+                  </div>
                 </div>
-                <h3 className="lp-event-card__title">{ev.title}</h3>
-                <p className="lp-event-card__venue">
-                  <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13" style={{marginRight:4,verticalAlign:"middle"}}><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-                  {ev.venue}
-                </p>
-                <div className="lp-event-card__footer">
-                  <span className="lp-event-slots"><span className="lp-event-slots__dot" />{ev.slots} slots left</span>
-                  <a href="/register" className="lp-btn lp-btn--sm lp-btn--primary">Register</a>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="lp-no-events">No upcoming events found.</div>
+            )}
           </div>
         </div>
       </section>

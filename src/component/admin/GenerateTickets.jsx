@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import api from "../../api/api";
 
 const TEMPLATES = [
   {
@@ -41,19 +42,6 @@ const TEMPLATES = [
     ],
   },
 ];
-
-const REGISTRATIONS = [
-  { id:1, name:"Deepa Nair",   mobile:"9876543210", designation:"Engineer",   company:"Infosys",   passcode:"PASS-1001", event:"Leadership Summit" },
-  { id:2, name:"Meera Joshi",  mobile:"9123456789", designation:"Manager",    company:"TCS",       passcode:"PASS-1002", event:"Tech Conference" },
-  { id:3, name:"Anita Gupta",  mobile:"9001122334", designation:"Director",   company:"Wipro",     passcode:"PASS-1003", event:"Leadership Summit" },
-  { id:4, name:"Ravi Shankar", mobile:"9988776655", designation:"Developer",  company:"HCL",       passcode:"PASS-1004", event:"Developer Hackathon" },
-  { id:5, name:"Suresh Babu",  mobile:"9765432100", designation:"Consultant", company:"Cognizant", passcode:"PASS-1005", event:"Tech Conference" },
-  { id:6, name:"Prakash Iyer", mobile:"9654321099", designation:"Analyst",    company:"Accenture", passcode:"PASS-1006", event:"Developer Hackathon" },
-  { id:7, name:"Kavya Menon",  mobile:"9543210988", designation:"Architect",  company:"IBM",       passcode:"PASS-1007", event:"Leadership Summit" },
-  { id:8, name:"Arjun Mehta",  mobile:"9432109877", designation:"Lead",       company:"Oracle",    passcode:"PASS-1008", event:"Developer Hackathon" },
-];
-
-const ALL_EVENTS = ["All Events", ...new Set(REGISTRATIONS.map(r => r.event))];
 
 const QRPlaceholder = ({ size = 120 }) => (
   <svg width={size} height={size} viewBox="0 0 120 120" style={{ display:"block" }}>
@@ -367,12 +355,12 @@ function MiniTicket({ reg }) {
   );
 }
 
-function ManagementSection() {
+function ManagementSection({ registrations, eventsList, loading }) {
   const [search, setSearch]     = useState("");
   const [eventFilter, setEvent] = useState("All Events");
   const [selected, setSelected] = useState(new Set());
 
-  const filtered = REGISTRATIONS.filter(r => {
+  const filtered = registrations.filter(r => {
     const q = search.toLowerCase();
     const matchSearch = !q || r.name.toLowerCase().includes(q) || r.company.toLowerCase().includes(q);
     const matchEvent  = eventFilter === "All Events" || r.event === eventFilter;
@@ -413,7 +401,8 @@ function ManagementSection() {
           fontSize:13, color:"#0f172a", background:"#fff", outline:"none",
           fontWeight:600, cursor:"pointer", minWidth:160
         }}>
-          {ALL_EVENTS.map(ev => <option key={ev} value={ev}>{ev}</option>)}
+          <option value="All Events">All Events</option>
+          {eventsList.map(ev => <option key={ev} value={ev}>{ev}</option>)}
         </select>
 
         <div style={{
@@ -469,7 +458,9 @@ function ManagementSection() {
         gridTemplateColumns:"repeat(auto-fill, minmax(160px, 1fr))",
         gap:16
       }}>
-        {filtered.map(reg => (
+        {loading ? (
+          <div style={{gridColumn:"1/-1", textAlign:"center", padding:40, color:"#94a3b8"}}>Loading tickets...</div>
+        ) : filtered.map(reg => (
           <div key={reg.id} style={{display:"flex", flexDirection:"column", gap:8}}>
             <div style={{position:"relative"}}>
               {/* Select checkbox overlay */}
@@ -511,7 +502,7 @@ function ManagementSection() {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div style={{
           textAlign:"center", padding:"48px 24px", color:"#94a3b8"
         }}>
@@ -526,6 +517,46 @@ function ManagementSection() {
 
 export default function GenerateTickets() {
   const [tab, setTab] = useState("designer");
+  const [registrations, setRegistrations] = useState([]);
+  const [eventsList, setEventsList]       = useState([]);
+  const [loading, setLoading]             = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [regRes, eventsRes] = await Promise.all([
+          api.getAllRegistrations(1, 1000),
+          api.getEvents(1, 100)
+        ]);
+
+        if (regRes.success) {
+          // Filter only approved/attended for tickets
+          setRegistrations(regRes.data
+            .filter(r => r.status_name.toLowerCase() === "approved" || r.status_name.toLowerCase() === "attended")
+            .map(r => ({
+              id: r.registration_id,
+              name: r.participant_name,
+              mobile: r.participant_phone,
+              designation: r.designation || "N/A",
+              company: r.organization || "N/A",
+              passcode: `PASS-${r.registration_id}`,
+              event: r.event_name
+            }))
+          );
+        }
+
+        if (eventsRes.success) {
+          setEventsList(eventsRes.data.map(e => e.event_name));
+        }
+      } catch (error) {
+        console.error("Error fetching ticket data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <div style={{fontFamily:"inherit", paddingBottom:48}}>
@@ -571,7 +602,13 @@ export default function GenerateTickets() {
 
       {/* Content */}
       {tab==="designer"   && <DesignerSection/>}
-      {tab==="management" && <ManagementSection/>}
+      {tab==="management" && (
+        <ManagementSection 
+          registrations={registrations} 
+          eventsList={eventsList} 
+          loading={loading}
+        />
+      )}
     </div>
   );
 }

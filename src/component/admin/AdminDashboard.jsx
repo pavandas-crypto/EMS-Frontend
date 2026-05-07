@@ -1,30 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import api from "../../api/api";
 
 function AdminDashboard() {
-  const [events] = useState([
-    {
-      event_id: 1,
-      event_name: "Tech Conference 2024",
-      start_date_time: "2024-05-15 09:00",
-      end_date_time: "2024-05-15 17:00",
-      total_registrations: 120,
-      status: "active",
-    },
-    {
-      event_id: 2,
-      event_name: "Networking Breakfast",
-      start_date_time: "2024-06-10 08:00",
-      end_date_time: "2024-06-10 10:00",
-      total_registrations: 45,
-      status: "pending",
-    },
-  ]);
+  const [events, setEvents] = useState([]);
+  const [summary, setSummary] = useState({
+    total_users: 0,
+    total_events: 0,
+    total_registrations: 0,
+    total_scans: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState("event_name");
   const [sortOrder, setSortOrder] = useState("asc");
   const rowsPerPage = 10;
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        // Fetch stats
+        const statsResponse = await api.getStats();
+        if (statsResponse.success) {
+          setSummary(statsResponse.data.summary);
+        }
+
+        // Fetch events
+        const eventsResponse = await api.getEvents(1, 50); 
+        if (eventsResponse.success) {
+          setEvents(eventsResponse.data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
   
   const sortedEvents = [...events].sort((a, b) => {
     let aValue = a[sortColumn];
@@ -71,9 +87,6 @@ function AdminDashboard() {
     );
   };
 
-  const [eventCount] = useState(events.length);
-  const totalRegistrations = events.reduce((sum, e) => sum + e.total_registrations, 0);
-
   const stats = [
     {
       icon: (
@@ -86,7 +99,7 @@ function AdminDashboard() {
         </svg>
       ),
       label: "Total Events",
-      value: eventCount,
+      value: summary.total_events,
     },
     {
       icon: (
@@ -98,7 +111,7 @@ function AdminDashboard() {
         </svg>
       ),
       label: "Total Reg",
-      value: totalRegistrations,
+      value: summary.total_registrations,
     },
     {
       icon: (
@@ -106,49 +119,48 @@ function AdminDashboard() {
           <path d="M20 6L9 17l-5-5" />
         </svg>
       ),
-      label: "Approved",
-      value: 85,
+      label: "Check-ins",
+      value: summary.total_scans,
     },
     {
       icon: (
         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 2h12" />
-          <path d="M6 22h12" />
-          <path d="M8 2h8v6l-4 4-4-4V2z" />
-          <path d="M16 16h-8v4h8v-4z" />
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
         </svg>
       ),
-      label: "Pending",
-      value: 60,
+      label: "Users",
+      value: summary.total_users,
     },
   ];
 
   return (
     <div>
-      {/* Page Header */}
       <div className="mb-4">
         <h1 className="h3 fw-bold mb-2">Dashboard</h1>
         <p className="text-muted">Welcome to your Event Management System admin panel</p>
       </div>
 
-      {/* Statistics Cards */}
       <div className="bw-stats-grid mb-4">
-        {stats.map((stat, idx) => (
-          <div key={idx} className="bw-stat-card">
-            <div className="card-body p-4">
-              <div className="d-flex justify-content-between align-items-start gap-3">
-                <div>
-                  <p className="text-uppercase text-muted small mb-2">{stat.label}</p>
-                  <h3 className="mb-0 bw-stat-value">{stat.value}</h3>
+        {loading ? (
+          <div className="text-center p-4 w-100">Loading dashboard statistics...</div>
+        ) : (
+          stats.map((stat, idx) => (
+            <div key={idx} className="bw-stat-card">
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <p className="text-uppercase text-muted small mb-2">{stat.label}</p>
+                    <h3 className="mb-0 bw-stat-value">{stat.value}</h3>
+                  </div>
+                  <div className="bw-stat-icon">{stat.icon}</div>
                 </div>
-                <div className="bw-stat-icon">{stat.icon}</div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
-
-      {/* Recent Events Table */}
+ 
       <div className="ems-table-card">
         <div className="ems-table-header">
           <h5 className="ems-table-title">
@@ -164,8 +176,10 @@ function AdminDashboard() {
             New Event
           </Link>
         </div>
-
-        {events.length === 0 ? (
+ 
+        {loading ? (
+          <div className="p-5 text-center text-muted">Fetching events...</div>
+        ) : events.length === 0 ? (
           <div className="ems-empty-state">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -199,50 +213,50 @@ function AdminDashboard() {
                       <td colSpan="5" className="text-center py-4 text-muted">No events to display</td>
                     </tr>
                   ) : (
-                    recentEvents.map((event) => (
-                      <tr key={event.event_id}>
-                        <td>
-                          <span className="ems-event-name">{event.event_name}</span>
-                        </td>
-                        <td>
-                          <span className="ems-date-primary">
-                            {new Date(event.start_date_time).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
-                          </span>
-                          <span className="ems-date-secondary">
-                            {new Date(event.start_date_time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </td>
-                        <td className="text-center">
-                          <span className="ems-reg-badge">{event.total_registrations}</span>
-                        </td>
-                        <td className="text-center">
-                          <span className={`ems-status-badge ems-status-${event.status}`}>
-                            {event.status === "active" ? (
+                    recentEvents.map((event) => {
+                      const isUpcoming = new Date(event.start_date_time) > new Date();
+                      const status = isUpcoming ? "Upcoming" : "Past";
+                      return (
+                        <tr key={event.event_id}>
+                          <td>
+                            <span className="ems-event-name">{event.event_name}</span>
+                          </td>
+                          <td>
+                            <span className="ems-date-primary">
+                              {new Date(event.start_date_time).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                            </span>
+                            <span className="ems-date-secondary">
+                              {new Date(event.start_date_time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </td>
+                          <td className="text-center">
+                            <span className="ems-reg-badge">{event.total_registrations}</span>
+                          </td>
+                          <td className="text-center">
+                            <span className={`ems-status-badge ems-status-${status.toLowerCase()}`}>
                               <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style={{ marginRight: 5 }}><circle cx="4" cy="4" r="4"/></svg>
-                            ) : (
-                              <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style={{ marginRight: 5 }}><circle cx="4" cy="4" r="4"/></svg>
-                            )}
-                            {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                          </span>
-                        </td>
-                        <td className="text-end">
-                          <div className="ems-action-group">
-                            <Link to={`/admin/events/edit/${event.event_id}`} className="ems-action-btn" title="Edit event">
-                              <i className="bi bi-pencil"></i>
-                            </Link>
-                            <Link to={`/admin/events/${event.event_id}/form`} className="ems-action-btn" title="Preview">
-                              <i className="bi bi-eye"></i>
-                            </Link>
-                            <Link to={`/admin/registrations?event_id=${event.event_id}`} className="ems-action-btn" title="Registrations">
-                              <i className="bi bi-people"></i>
-                            </Link>
-                            <Link to={`/admin/tickets?event_id=${event.event_id}`} className="ems-action-btn" title="Tickets">
-                              <i className="bi bi-ticket"></i>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              {status}
+                            </span>
+                          </td>
+                          <td className="text-end">
+                            <div className="ems-action-group">
+                              <Link to={`/admin/events/edit/${event.event_id}`} className="ems-action-btn" title="Edit event">
+                                <i className="bi bi-pencil"></i>
+                              </Link>
+                              <Link to={`/admin/events/${event.event_id}/form`} className="ems-action-btn" title="Preview">
+                                <i className="bi bi-eye"></i>
+                              </Link>
+                              <Link to={`/admin/registrations?event_id=${event.event_id}`} className="ems-action-btn" title="Registrations">
+                                <i className="bi bi-people"></i>
+                              </Link>
+                              <Link to={`/admin/tickets?event_id=${event.event_id}`} className="ems-action-btn" title="Tickets">
+                                <i className="bi bi-ticket"></i>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -277,156 +291,41 @@ function AdminDashboard() {
       </div>
 
       <style>{`
-        /* Table card */
-        .ems-table-card {
-          background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
-          overflow: hidden;
-        }
-        .ems-table-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 18px 24px;
-          border-bottom: 1px solid #f0f0f0;
-        }
-        .ems-table-title {
-          font-size: 15px;
-          font-weight: 700;
-          color: #1a202c;
-          margin: 0;
-        }
-        .ems-btn-new {
-          display: inline-flex;
-          align-items: center;
-          padding: 7px 14px;
-          background: #2563eb;
-          color: #fff;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
-          text-decoration: none;
-          transition: background 0.15s;
-        }
+        .ems-table-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05); overflow: hidden; }
+        .ems-table-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #f0f0f0; }
+        .ems-table-title { font-size: 15px; font-weight: 700; color: #1a202c; margin: 0; }
+        .ems-btn-new { display: inline-flex; align-items: center; padding: 7px 14px; background: #2563eb; color: #fff; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
         .ems-btn-new:hover { background: #1d4ed8; color: #fff; }
-
-        /* Table */
-        .ems-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 14px;
-        }
-        .ems-table thead tr {
-          background: #f8f9fb;
-          border-bottom: 1px solid #eaecf0;
-        }
-        .ems-table th {
-          padding: 11px 20px;
-          font-size: 11.5px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.06em;
-          color: #6b7280;
-          white-space: nowrap;
-          user-select: none;
-        }
+        .ems-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .ems-table thead tr { background: #f8f9fb; border-bottom: 1px solid #eaecf0; }
+        .ems-table th { padding: 11px 20px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; white-space: nowrap; user-select: none; }
         .ems-table th.sortable { cursor: pointer; }
         .ems-table th.sortable:hover { color: #374151; }
-        .ems-table td {
-          padding: 14px 20px;
-          border-bottom: 1px solid #f3f4f6;
-          vertical-align: middle;
-          color: #374151;
-        }
-        .ems-table tbody tr:last-child td { border-bottom: none; }
+        .ems-table td { padding: 14px 20px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; color: #374151; }
         .ems-table tbody tr:hover td { background: #f9fafb; }
-
-        /* Cell content */
         .ems-event-name { font-weight: 600; color: #111827; }
         .ems-date-primary { display: block; font-weight: 500; color: #111827; }
         .ems-date-secondary { display: block; font-size: 12px; color: #9ca3af; margin-top: 1px; }
-        .ems-reg-badge {
-          display: inline-block;
-          min-width: 36px;
-          padding: 3px 10px;
-          background: #eff6ff;
-          color: #2563eb;
-          border-radius: 20px;
-          font-size: 12.5px;
-          font-weight: 700;
-          text-align: center;
-        }
-        .ems-status-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 4px 10px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 600;
-        }
-        .ems-status-active { background: #dcfce7; color: #16a34a; }
-        .ems-status-pending { background: #fef9c3; color: #b45309; }
-        .ems-status-cancelled { background: #fee2e2; color: #dc2626; }
-
-        /* Action buttons */
+        .ems-reg-badge { display: inline-block; min-width: 36px; padding: 3px 10px; background: #eff6ff; color: #2563eb; border-radius: 20px; font-size: 12.5px; font-weight: 700; text-align: center; }
+        .ems-status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .ems-status-upcoming { background: #dcfce7; color: #16a34a; }
+        .ems-status-past { background: #f3f4f6; color: #6b7280; }
         .ems-action-group { display: inline-flex; gap: 4px; }
-        .ems-action-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 30px;
-          height: 30px;
-          border-radius: 7px;
-          color: #6b7280;
-          background: transparent;
-          border: 1px solid #e5e7eb;
-          text-decoration: none;
-          font-size: 13px;
-          transition: all 0.12s;
-        }
+        .ems-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; color: #6b7280; background: transparent; border: 1px solid #e5e7eb; text-decoration: none; font-size: 13px; transition: all 0.12s; }
         .ems-action-btn:hover { background: #f3f4f6; color: #111827; border-color: #d1d5db; }
-
-        /* Footer */
-        .ems-table-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 12px 24px;
-          border-top: 1px solid #f0f0f0;
-          background: #fafafa;
-        }
+        .ems-table-footer { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-top: 1px solid #f0f0f0; background: #fafafa; }
         .ems-count-label { font-size: 13px; color: #9ca3af; }
         .ems-pagination { display: flex; align-items: center; gap: 6px; }
-        .ems-page-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          padding: 5px 12px;
-          border: 1px solid #e5e7eb;
-          border-radius: 7px;
-          background: #fff;
-          font-size: 13px;
-          font-weight: 500;
-          color: #374151;
-          cursor: pointer;
-          transition: all 0.12s;
-        }
+        .ems-page-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border: 1px solid #e5e7eb; border-radius: 7px; background: #fff; font-size: 13px; font-weight: 500; color: #374151; cursor: pointer; transition: all 0.12s; }
         .ems-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .ems-page-btn:not(:disabled):hover { background: #f3f4f6; }
         .ems-page-num { font-size: 13px; color: #6b7280; padding: 0 4px; }
-
-        /* Empty state */
-        .ems-empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 48px 24px;
-          gap: 12px;
-          color: #9ca3af;
-          font-size: 14px;
-        }
-        .ems-empty-state p { margin: 0; }
+        .ems-empty-state { display: flex; flex-direction: column; align-items: center; padding: 48px 24px; gap: 12px; color: #9ca3af; font-size: 14px; }
+        .bw-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr) !important; gap: 20px; }
+        @media (max-width: 1200px) { .bw-stats-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+        @media (max-width: 576px) { .bw-stats-grid { grid-template-columns: 1fr !important; } }
+        .bw-stat-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05); }
+        .bw-stat-value { font-size: 28px; font-weight: 800; color: #111827; }
+        .bw-stat-icon { color: #2563eb; background: #eff6ff; padding: 10px; border-radius: 10px; }
       `}</style>
     </div>
   );

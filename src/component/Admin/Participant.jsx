@@ -1,62 +1,5 @@
-import React, { useState } from "react";
-
-const initialParticipants = [
-  {
-    id: 1, name: "Arjun Mehta", email: "arjun.mehta@email.com",
-    event: "Leadership Summit", registeredAt: "2026-04-30T09:15:00", approval: "Pending",
-  },
-  {
-    id: 2, name: "Priya Sharma", email: "priya.sharma@email.com",
-    event: "Developer Hackathon", registeredAt: "2026-04-30T10:30:00", approval: "Pending",
-  },
-  {
-    id: 3, name: "Rahul Verma", email: "rahul.verma@email.com",
-    event: "Community Training", registeredAt: "2026-04-29T14:20:00", approval: "Pending",
-  },
-  {
-    id: 4, name: "Sneha Patel", email: "sneha.patel@email.com",
-    event: "Volunteer Orientation", registeredAt: "2026-04-29T11:45:00", approval: "Pending",
-  },
-  {
-    id: 5, name: "Kiran Kumar", email: "kiran.kumar@email.com",
-    event: "Leadership Summit", registeredAt: "2026-04-28T16:00:00", approval: "Pending",
-  },
-  {
-    id: 6, name: "Deepa Nair", email: "deepa.nair@email.com",
-    event: "Tech Conference", registeredAt: "2026-04-25T08:00:00",
-    approval: "Approved", decidedAt: "2026-04-26T09:00:00",
-  },
-  {
-    id: 7, name: "Amit Singh", email: "amit.singh@email.com",
-    event: "Networking Breakfast", registeredAt: "2026-04-24T10:00:00",
-    approval: "Denied", decidedAt: "2026-04-25T11:00:00",
-  },
-  {
-    id: 8, name: "Meera Joshi", email: "meera.joshi@email.com",
-    event: "Spring Conference", registeredAt: "2026-04-23T12:00:00",
-    approval: "Approved", decidedAt: "2026-04-24T13:00:00",
-  },
-  {
-    id: 9, name: "Vijay Reddy", email: "vijay.reddy@email.com",
-    event: "Developer Hackathon", registeredAt: "2026-04-22T14:00:00",
-    approval: "Denied", decidedAt: "2026-04-23T15:00:00",
-  },
-  {
-    id: 10, name: "Anita Gupta", email: "anita.gupta@email.com",
-    event: "Community Training", registeredAt: "2026-04-21T16:00:00",
-    approval: "Approved", decidedAt: "2026-04-22T17:00:00",
-  },
-  {
-    id: 11, name: "Ravi Shankar", email: "ravi.shankar@email.com",
-    event: "Charity Gala", registeredAt: "2026-04-20T09:00:00",
-    approval: "Approved", decidedAt: "2026-04-21T10:00:00",
-  },
-  {
-    id: 12, name: "Kavitha Menon", email: "kavitha.menon@email.com",
-    event: "Marketing Workshop", registeredAt: "2026-04-19T11:00:00",
-    approval: "Denied", decidedAt: "2026-04-20T12:00:00",
-  },
-];
+import React, { useState, useEffect } from "react";
+import api from "../../api/api";
 
 const AVATAR_COLORS = [
   "#3b82f6","#8b5cf6","#ec4899","#f59e0b",
@@ -64,16 +7,19 @@ const AVATAR_COLORS = [
 ];
 
 function getInitials(name) {
+  if (!name) return "??";
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
 function getAvatarColor(name) {
+  if (!name) return "#cbd5e0";
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 function timeAgo(dateStr) {
+  if (!dateStr) return "N/A";
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
@@ -124,16 +70,6 @@ const PenIcon = () => (
   </svg>
 );
 
-const UsersIcon = () => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
-    stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
 const CheckCircleIcon = () => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
     stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -171,33 +107,67 @@ const EmptyDocIcon = () => (
   </svg>
 );
 
-/* ── Component ─────────────────────────────────────────────────────────── */
 function Participant() {
-  const [participants, setParticipants] = useState(initialParticipants);
+  const [participants, setParticipants] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const pending = participants.filter((p) => p.approval === "Pending");
+  const fetchParticipants = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getAllRegistrations(1, 100);
+      if (response.success) {
+        // Map backend data to frontend format if needed
+        const mappedData = response.data.map(p => ({
+          id: p.registration_id,
+          name: p.participant_name,
+          email: p.participant_email,
+          event: p.event_name,
+          registeredAt: p.registered_at,
+          approval: p.status_name ? (p.status_name.charAt(0).toUpperCase() + p.status_name.slice(1)) : 'Pending',
+          decidedAt: p.updated_at
+        }));
+        setParticipants(mappedData);
+      }
+    } catch (error) {
+      console.error("Error fetching participants:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchParticipants();
+  }, []);
+
+  const pending = participants.filter((p) => p.approval === "Pending" || p.approval === "pending");
   const decided = participants
-    .filter((p) => p.approval !== "Pending")
+    .filter((p) => p.approval !== "Pending" && p.approval !== "pending")
     .sort((a, b) => new Date(b.decidedAt) - new Date(a.decidedAt))
     .slice(0, 5);
 
-  const totalApproved = participants.filter((p) => p.approval === "Approved").length;
-  const totalDenied = participants.filter((p) => p.approval === "Denied").length;
+  const totalApproved = participants.filter((p) => p.approval === "Approved" || p.approval === "approved").length;
+  const totalDenied = participants.filter((p) => p.approval === "Rejected" || p.approval === "rejected" || p.approval === "Denied" || p.approval === "denied").length;
 
-  const handleApprove = (id) => {
-    setParticipants((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, approval: "Approved", decidedAt: new Date().toISOString() } : p
-      )
-    );
+  const handleApprove = async (id) => {
+    try {
+      const response = await api.updateRegistrationStatus(id, "approved");
+      if (response.success) {
+        fetchParticipants();
+      }
+    } catch (error) {
+      alert("Error approving registration: " + error.message);
+    }
   };
 
-  const handleReject = (id) => {
-    setParticipants((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, approval: "Denied", decidedAt: new Date().toISOString() } : p
-      )
-    );
+  const handleReject = async (id) => {
+    try {
+      const response = await api.updateRegistrationStatus(id, "rejected");
+      if (response.success) {
+        fetchParticipants();
+      }
+    } catch (error) {
+      alert("Error rejecting registration: " + error.message);
+    }
   };
 
   const stats = [

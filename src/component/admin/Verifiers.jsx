@@ -1,28 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-
-const ALL_EVENTS = [
-  "Leadership Summit",
-  "Developer Hackathon",
-  "Community Training",
-  "Volunteer Orientation",
-  "Tech Conference",
-  "Networking Breakfast",
-  "Spring Conference",
-  "Charity Gala",
-  "Marketing Workshop",
-];
-
-const initialVerifiers = [
-  { id: 1, name: "Ritu Singh",   username: "ritu.singh",   email: "ritu.singh@ems.com",   password: "Pass@123", events: ["Leadership Summit", "Tech Conference"] },
-  { id: 2, name: "Deepak Joshi", username: "deepak.joshi", email: "deepak.joshi@ems.com", password: "Joshi@456", events: ["Developer Hackathon", "Spring Conference"] },
-  { id: 3, name: "Smita Das",    username: "smita.das",    email: "smita.das@ems.com",    password: "Smita@789", events: ["Charity Gala"] },
-];
+import api from "../../api/api";
 
 const EMPTY_FORM = { name: "", username: "", email: "", password: "", events: [] };
 
 function getInitials(name) {
+  if (!name) return "??";
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
+
 
 /* ── Icons ───────────────────────────────────────────────────────────────── */
 const Icon = {
@@ -97,7 +82,7 @@ const Icon = {
 };
 
 /* ── Event combobox multi-select ─────────────────────────────────────────── */
-function EventMultiSelect({ selected, onChange, error }) {
+function EventMultiSelect({ selected, onChange, error, events = [] }) {
   const [open, setOpen]       = useState(false);
   const [query, setQuery]     = useState("");
   const ref                   = useRef(null);
@@ -110,8 +95,8 @@ function EventMultiSelect({ selected, onChange, error }) {
   }, []);
 
   const filtered = query.trim()
-    ? ALL_EVENTS.filter((e) => e.toLowerCase().includes(query.trim().toLowerCase()))
-    : ALL_EVENTS;
+    ? events.filter((e) => e.toLowerCase().includes(query.trim().toLowerCase()))
+    : events;
 
   const toggle = (ev) => {
     onChange(selected.includes(ev) ? selected.filter((e) => e !== ev) : [...selected, ev]);
@@ -176,7 +161,9 @@ function EventMultiSelect({ selected, onChange, error }) {
 
 /* ── Component ───────────────────────────────────────────────────────────── */
 function Verifiers() {
-  const [verifiers, setVerifiers]     = useState(initialVerifiers);
+  const [verifiers, setVerifiers]     = useState([]);
+  const [allEventsList, setAllEventsList] = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [showForm, setShowForm]       = useState(false);
   const [editingId, setEditingId]     = useState(null);
   const [form, setForm]               = useState(EMPTY_FORM);
@@ -184,6 +171,38 @@ function Verifiers() {
   const [showPass, setShowPass]       = useState(false);
   const [toast, setToast]             = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const fetchVerifiers = async () => {
+    try {
+      setLoading(true);
+      const [usersRes, eventsRes] = await Promise.all([
+        api.getUsers(),
+        api.getEvents(1, 100)
+      ]);
+      
+      if (usersRes.success) {
+        setVerifiers(usersRes.data.filter(u => u.role_name === 'verifier').map(u => ({
+          id: u.user_id,
+          name: u.name,
+          username: u.username,
+          email: u.email,
+          events: (u.assigned_events || []).map(e => e.event_name)
+        })));
+      }
+
+      if (eventsRes.success) {
+        setAllEventsList(eventsRes.data.map(e => ({ id: e.event_id, name: e.event_name })));
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVerifiers();
+  }, []);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -200,7 +219,7 @@ function Verifiers() {
 
   const openEdit = (v) => {
     setEditingId(v.id);
-    setForm({ name: v.name, username: v.username, email: v.email, password: v.password, events: [...v.events] });
+    setForm({ name: v.name, username: v.username, email: v.email, password: "", events: [...v.events] });
     setErrors({});
     setShowPass(false);
     setShowForm(true);
@@ -222,38 +241,54 @@ function Verifiers() {
     return e;
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
-    if (editingId) {
-      setVerifiers((prev) =>
-        prev.map((v) =>
-          v.id === editingId
-            ? { ...v, name: form.name, username: form.username, email: form.email,
-                password: form.password || v.password, events: form.events }
-            : v
-        )
-      );
-      showToast("Verifier updated successfully.");
-    } else {
-      const dup = verifiers.find((v) => v.username === form.username.trim());
-      if (dup) { setErrors({ username: "Username already exists." }); return; }
-      setVerifiers((prev) => [
-        ...prev,
-        { id: Date.now(), name: form.name, username: form.username,
-          email: form.email, password: form.password, events: form.events },
-      ]);
-      showToast("Verifier created successfully.");
+    try {
+      if (editingId) {
+        const selectedEventIds = allEventsList
+          .filter(e => form.events.includes(e.name))
+          .map(e => e.id);
+          
+        await api.updateVerifierEvents(editingId, selectedEventIds);
+        showToast("Verifier assignments updated.");
+      } else {
+        const response = await api.register({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          role: 'verifier',
+          username: form.username
+        });
+
+        if (response.success) {
+          const userId = response.data.user.user_id;
+          const selectedEventIds = allEventsList
+            .filter(e => form.events.includes(e.name))
+            .map(e => e.id);
+            
+          await api.updateVerifierEvents(userId, selectedEventIds);
+          showToast("Verifier created successfully.");
+        }
+      }
+      fetchVerifiers();
+      setShowForm(false);
+    } catch (error) {
+      alert("Error: " + error.message);
     }
-    cancel();
   };
 
-  const handleDelete = (id) => {
-    setVerifiers((prev) => prev.filter((v) => v.id !== id));
-    setDeleteConfirm(null);
-    showToast("Verifier removed.", "error");
+  const handleDelete = async (id) => {
+    try {
+      await api.deleteUser(id);
+      fetchVerifiers();
+      setDeleteConfirm(null);
+      showToast("Verifier removed.", "error");
+    } catch (error) {
+      alert("Failed to delete: " + error.message);
+    }
   };
 
   const field = (key, value) => {
@@ -382,6 +417,7 @@ function Verifiers() {
                 selected={form.events}
                 onChange={(evs) => field("events", evs)}
                 error={!!errors.events}
+                events={allEventsList.map(e => e.name)}
               />
               {errors.events && <span className="vf-err">{errors.events}</span>}
             </div>
@@ -405,7 +441,13 @@ function Verifiers() {
         </div>
       </div>
 
-      {verifiers.length === 0 ? (
+      {loading ? (
+        <div className="vf-card">
+          <div className="vf-empty">
+            <p>Loading verifiers...</p>
+          </div>
+        </div>
+      ) : verifiers.length === 0 ? (
         <div className="vf-card">
           <div className="vf-empty">
             <Icon.Empty/>

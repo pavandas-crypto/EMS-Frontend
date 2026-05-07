@@ -1,16 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import api from "../../api/api";
 
 function RegisterForm() {
+  const { eventId: urlEventId } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    event: "",
+    event: urlEventId || "",
   });
+  const [events, setEvents] = useState([]);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^[0-9]{8,15}$/;
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await api.getEvents(1, 100);
+        if (response.success) {
+          setEvents(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      }
+    };
+    fetchEvents();
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -19,7 +40,7 @@ function RegisterForm() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const nextErrors = {};
 
@@ -28,7 +49,7 @@ function RegisterForm() {
     else if (!emailRegex.test(formData.email)) nextErrors.email = "Enter a valid email address.";
     if (!formData.phone.trim()) nextErrors.phone = "Phone number is required.";
     else if (!phoneRegex.test(formData.phone)) nextErrors.phone = "Enter a valid numeric phone number.";
-    if (!formData.event.trim()) nextErrors.event = "Please select the event you want to join.";
+    if (!formData.event) nextErrors.event = "Please select the event you want to join.";
 
     setErrors(nextErrors);
 
@@ -37,7 +58,25 @@ function RegisterForm() {
       return;
     }
 
-    setStatus({ type: "success", message: "Registration form is valid. No external submission is performed." });
+    setLoading(true);
+    try {
+      const response = await api.registerForEvent({
+        event_id: formData.event,
+        participant_name: formData.name,
+        participant_email: formData.email,
+        participant_phone: formData.phone,
+      });
+
+      if (response.success) {
+        setStatus({ type: "success", message: "Registration successful! You will receive your ticket via email." });
+        // Optionally redirect or show success screen
+        setTimeout(() => navigate(`/event/${formData.event}`), 3000);
+      }
+    } catch (error) {
+      setStatus({ type: "error", message: error.message || "Registration failed. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -120,15 +159,22 @@ function RegisterForm() {
                 className={`select-field ${errors.event ? "input-error" : ""}`}
               >
                 <option value="">Choose an event</option>
-                <option value="spring-conference">Spring Leadership Conference</option>
-                <option value="community-gala">Community Impact Gala</option>
-                <option value="training-series">Training Workshop Series</option>
+                {events.map(ev => (
+                  <option key={ev.event_id} value={ev.event_id}>
+                    {ev.event_name}
+                  </option>
+                ))}
               </select>
               {errors.event && <div className="field-error">{errors.event}</div>}
             </div>
 
-            <button type="submit" className="button button-primary" style={{ width: "100%" }}>
-              Validate registration
+            <button 
+              type="submit" 
+              className="button button-primary" 
+              style={{ width: "100%" }}
+              disabled={loading}
+            >
+              {loading ? "Registering..." : "Validate registration"}
             </button>
           </form>
 

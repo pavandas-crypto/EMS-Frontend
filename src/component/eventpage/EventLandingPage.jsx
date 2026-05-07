@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import api from "../../api/api";
 import "./eventlanding.css";
 
 function EventLandingPage() {
@@ -9,17 +10,23 @@ function EventLandingPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch event data from localStorage or API
-    const fetchEvent = () => {
+    const fetchEvent = async () => {
       try {
-        // Try to get from localStorage first (demo purpose)
-        const events = JSON.parse(localStorage.getItem("events")) || [];
-        const foundEvent = events.find((e) => e.id === eventId);
-
-        if (foundEvent) {
-          setEvent(foundEvent);
-        } else {
-          console.warn("Event not found");
+        const response = await api.getEvent(eventId);
+        if (response.success) {
+          // Map backend fields to frontend state if names differ
+          const eventData = response.data;
+          setEvent({
+            id: eventData.event_id,
+            title: eventData.event_name,
+            description: eventData.description,
+            startDate: eventData.start_date_time,
+            endDate: eventData.end_date_time,
+            location: eventData.address,
+            category: eventData.event_for === "all" ? "PUBLIC" : "MEMBERS ONLY",
+            imageUrl: eventData.image_url,
+            // Add other fields as needed
+          });
         }
       } catch (error) {
         console.error("Error fetching event:", error);

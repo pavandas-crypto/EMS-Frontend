@@ -1,76 +1,84 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Badge, Button, Card, Col, Form, InputGroup, Modal, Row } from "react-bootstrap";
-
-const initialEvents = [
-  {
-    id: 1,
-    title: "Spring Tech Conference",
-    date: "2026-05-21",
-    venue: "Convention Center",
-    status: "Upcoming",
-    description: "A full-day event for networking, workshops, and keynote speeches.",
-  },
-  {
-    id: 2,
-    title: "Annual Charity Gala",
-    date: "2025-12-15",
-    venue: "Grand Ballroom",
-    status: "Past",
-    description: "An evening of fundraising, dinner, and awards for community causes.",
-  },
-  {
-    id: 3,
-    title: "Developer Hackathon",
-    date: "2026-06-10",
-    venue: "Innovation Lab",
-    status: "Upcoming",
-    description: "A 48-hour coding challenge for developers to build new products.",
-  },
-  {
-    id: 4,
-    title: "Marketing Workshop",
-    date: "2026-01-19",
-    venue: "Online",
-    status: "Past",
-    description: "A virtual workshop on digital marketing and growth strategies.",
-  },
-];
+import api from "../../api/api";
 
 function EventMag() {
-  const [events, setEvents] = useState(initialEvents);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: "", date: "", venue: "", status: "Upcoming", description: "" });
+  const [newEvent, setNewEvent] = useState({ 
+    title: "", 
+    date: "", 
+    venue: "", 
+    status: "Upcoming", 
+    description: "",
+    address: ""
+  });
+
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getEvents(1, 100);
+      if (response.success) {
+        setEvents(response.data.map(ev => ({
+          id: ev.event_id,
+          title: ev.event_name,
+          date: ev.start_date_time.split('T')[0],
+          venue: ev.address || "TBD",
+          status: new Date(ev.start_date_time) > new Date() ? "Upcoming" : "Past",
+          description: ev.description || "No description available."
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching events:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const start = new Date(newEvent.date);
+      const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // Default 2 hours duration
+
+      const response = await api.createEvent({
+        event_name: newEvent.title,
+        description: newEvent.description,
+        start_date_time: start.toISOString(),
+        end_date_time: end.toISOString(),
+        address: newEvent.venue,
+        event_for: 'all'
+      });
+
+      if (response.success) {
+        fetchEvents();
+        setNewEvent({ title: "", date: "", venue: "", status: "Upcoming", description: "", address: "" });
+        setShowCreate(false);
+      }
+    } catch (error) {
+      alert("Failed to create event: " + error.message);
+    }
+  };
 
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => {
-      const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.venue.toLowerCase().includes(searchTerm.toLowerCase());
+    return (events || []).filter((event) => {
+      const matchesSearch = (event.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.venue || "").toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesFilter =
         filter === "All" ||
-        event.status.toLowerCase() === filter.toLowerCase();
+        (event.status || "").toLowerCase() === filter.toLowerCase();
 
       return matchesSearch && matchesFilter;
     });
   }, [events, filter, searchTerm]);
-
-  const handleCreateSubmit = (e) => {
-    e.preventDefault();
-    const nextEvent = {
-      id: events.length + 1,
-      title: newEvent.title || "New Event",
-      date: newEvent.date || new Date().toISOString().slice(0, 10),
-      venue: newEvent.venue || "TBD",
-      status: newEvent.status,
-      description: newEvent.description || "Description coming soon.",
-    };
-
-    setEvents([nextEvent, ...events]);
-    setNewEvent({ title: "", date: "", venue: "", status: "Upcoming", description: "" });
-    setShowCreate(false);
-  };
 
   const statusVariant = (status) => (status === "Upcoming" ? "success" : "secondary");
 
@@ -122,31 +130,39 @@ function EventMag() {
       </div>
 
       <Row className="gy-4">
-        {filteredEvents.map((event) => (
-          <Col key={event.id} xs={12} md={6} lg={4}>
-            <Card className="h-100 shadow-sm">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-start mb-3">
-                  <Card.Title>{event.title}</Card.Title>
-                  <Badge bg={statusVariant(event.status)}>{event.status}</Badge>
-                </div>
-                <Card.Subtitle className="mb-2 text-muted">{event.date}</Card.Subtitle>
-                <Card.Text className="mb-2">{event.description}</Card.Text>
-                <div className="text-secondary">Venue: {event.venue}</div>
-              </Card.Body>
-              <Card.Footer className="bg-white border-0 pt-0">
-                <Button size="sm" variant="outline-primary">View details</Button>
-              </Card.Footer>
-            </Card>
+        {loading ? (
+          <Col xs={12} className="text-center py-5">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="mt-2 text-muted">Fetching events from database...</p>
           </Col>
-        ))}
-
-        {filteredEvents.length === 0 && (
+        ) : filteredEvents.length === 0 ? (
           <Col xs={12}>
             <div className="alert alert-warning mb-0" role="alert">
               No events matched your search and filter criteria.
             </div>
           </Col>
+        ) : (
+          filteredEvents.map((event) => (
+            <Col key={event.id} xs={12} md={6} lg={4}>
+              <Card className="h-100 shadow-sm">
+                <Card.Body>
+                  <div className="d-flex justify-content-between align-items-start mb-3">
+                    <Card.Title>{event.title}</Card.Title>
+                    <Badge bg={statusVariant(event.status)}>{event.status}</Badge>
+                  </div>
+                  <Card.Subtitle className="mb-2 text-muted">{event.date}</Card.Subtitle>
+                  <Card.Text className="mb-2 text-truncate-3">{event.description}</Card.Text>
+                  <div className="text-secondary small">Venue: {event.venue}</div>
+                </Card.Body>
+                <Card.Footer className="bg-white border-0 pt-0 d-flex gap-2">
+                  <Button size="sm" variant="outline-primary" href={`/admin/events/edit/${event.id}`}>Edit</Button>
+                  <Button size="sm" variant="outline-secondary" href={`/event/${event.id}`}>Preview</Button>
+                </Card.Footer>
+              </Card>
+            </Col>
+          ))
         )}
       </Row>
 

@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import api from '../../api/api';
 import './Verifier.css';
-
-const mockUsers = {
-  'V12345': { status: 'valid', details: { name: 'John Doe', email: 'john.doe@example.com', designation: 'Software Engineer', organisation: 'Tech Corp', mobile: '9876543210', passNo: 'V12345' } },
-  'V67890': { status: 'valid', details: { name: 'Alice Smith', email: 'alice.smith@example.com', designation: 'Product Manager', organisation: 'Innovate Ltd', mobile: '8765432109', passNo: 'V67890' } },
-  'D11111': { status: 'duplicate', details: { name: 'Bob Johnson', email: 'bob.j@example.com', designation: 'Designer', organisation: 'Creative Agency', mobile: '7654321098', passNo: 'D11111' } },
-};
 
 const playBeep = (freq = 800, ms = 200) => {
   try {
@@ -27,20 +22,41 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
   const [userDetails, setUserDetails] = useState(null);
   const [activity, setActivity] = useState([]);
 
-  const processCode = (code) => {
-    const found = mockUsers[code] || { status: 'invalid', details: null };
-    setUserStatus(found.status);
-    setUserDetails(found.details);
-    setActivity(prev => [{
-      id: Date.now(),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      code,
-      status: found.status,
-      name: found.details?.name ?? 'Unknown',
-    }, ...prev].slice(0, 20));
-    if (found.status === 'valid') playBeep(800, 200);
-    else if (found.status === 'duplicate') playBeep(600, 300);
-    else playBeep(400, 500);
+  const processCode = async (code) => {
+    try {
+      const response = await api.scanQRCode({ qr_code: code, event_id: selectedEvent.id });
+      
+      if (response.success) {
+        const data = response.data;
+        const status = data.status || 'valid';
+        
+        setUserStatus(status);
+        setUserDetails({
+          name: data.participant_name,
+          email: data.email,
+          designation: data.designation,
+          organisation: data.organization,
+          mobile: data.phone,
+          passNo: data.pass_number
+        });
+        
+        setActivity(prev => [{
+          id: Date.now(),
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          code,
+          status: status,
+          name: data.participant_name,
+        }, ...prev].slice(0, 20));
+
+        if (status === 'valid') playBeep(800, 200);
+        else if (status === 'duplicate') playBeep(600, 300);
+      }
+    } catch (error) {
+      console.error("Scan error:", error);
+      setUserStatus('invalid');
+      setUserDetails(null);
+      playBeep(400, 500);
+    }
   };
 
   const handleScan = (code) => {
@@ -73,7 +89,6 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
     <div className="v-page">
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1rem' }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
           <div>
             <button onClick={onBackToSelection} className="v-btn--text" style={{ marginBottom: '0.75rem' }}>
@@ -89,14 +104,12 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
         </div>
 
         <div className="v-dashboard-grid">
-          {/* Left: Scanner card */}
           <div className="v-card" style={{ position: 'relative', overflow: 'hidden', minHeight: 480 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <span style={{ fontWeight: 700, fontSize: '1rem', color: '#020202ff' }}>Camera</span>
               <i className="fas fa-camera" style={{ color: '#636366' }}></i>
             </div>
 
-            {/* QR scanner */}
             <div className="v-scanner-wrap">
               <div id="reader"></div>
             </div>
@@ -107,7 +120,6 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
 
             <hr className="v-divider" />
 
-            {/* Manual entry */}
             <label className="v-label">Manual Code Entry</label>
             <form onSubmit={e => {
               e.preventDefault();
@@ -125,7 +137,6 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
               </button>
             </form>
 
-            {/* Inline result overlay */}
             {scanResult && (
               <div className={`v-result ${statusClass}`}>
                 <i className={`fas ${statusIcon} v-result__icon`}></i>
@@ -172,9 +183,7 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
             )}
           </div>
 
-          {/* Right column */}
           <div className="v-col-stack">
-            {/* Event info card */}
             <div className="v-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #2c2c2e' }}>
                 <span style={{ fontWeight: 700, color: '#000000ff' }}>Event Info</span>
@@ -204,7 +213,6 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
               </div>
             </div>
 
-            {/* Activity card */}
             <div className="v-card" style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #2c2c2e' }}>
                 <span style={{ fontWeight: 700, color: '#000000ff' }}>Recent Activity</span>

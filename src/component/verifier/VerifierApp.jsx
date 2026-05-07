@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../../api/api';
 import './Verifier.css';
 import EventSelection from './EventSelection';
 import VerifierDashboard from './dashboard';
@@ -20,6 +21,7 @@ function EyeIcon({ open }) {
 function VerifierApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [assignedEvents, setAssignedEvents] = useState([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -28,15 +30,37 @@ function VerifierApp() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!username || !password) return;
+    
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700));
-    setLoading(false);
-    if (username === 'admin' && password === 'admin') {
-      setIsLoggedIn(true);
-      setLoginError('');
-    } else {
-      setLoginError('Invalid credentials. Hint: admin / admin');
+    setLoginError('');
+    
+    try {
+      const response = await api.login({ email: username, password });
+      if (response.success) {
+        const { user, token } = response.data;
+        
+        // Save token
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        setAssignedEvents(user.assigned_events || []);
+        setIsLoggedIn(true);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setLoginError(error.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    setSelectedEvent(null);
+    setAssignedEvents([]);
   };
 
   if (!isLoggedIn) {
@@ -115,7 +139,7 @@ function VerifierApp() {
   }
 
   if (!selectedEvent) {
-    return <EventSelection onEventSelect={setSelectedEvent} onLogout={() => setIsLoggedIn(false)} />;
+    return <EventSelection events={assignedEvents} onEventSelect={setSelectedEvent} onLogout={handleLogout} />;
   }
 
   return <VerifierDashboard selectedEvent={selectedEvent} onBackToSelection={() => setSelectedEvent(null)} />;

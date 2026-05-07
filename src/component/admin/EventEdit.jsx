@@ -1,28 +1,91 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RegistrationFormBuilder from "./RegistrationFormBuilder";
 import SuccessPageBuilder from "./SuccessPageBuilder";
+import api from "../../api/api";
+import { useParams, useNavigate } from "react-router-dom";
 
 function EventEdit() {
+  const { eventId } = useParams();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    title: "Community Impact Gala",
-    description: "An evening of learning and celebration focused on partnership and impact.",
-    startDate: "2025-05-10T17:00",
-    endDate: "2025-05-10T20:00",
-    location: "City Conference Hall",
+    title: "",
+    description: "",
+    startDate: "",
+    startTime: "09:00",
+    startPeriod: "AM",
+    endDate: "",
+    endTime: "05:00",
+    endPeriod: "PM",
+    location: "",
+    category: "EVENT",
+    eventFor: "all",
   });
-  const [registrationFields, setRegistrationFields] = useState([
-    { id: 1, label: "Full Name", type: "text", required: true },
-    { id: 2, label: "Email", type: "email", required: true },
-    { id: 3, label: "Phone", type: "tel", required: false }
-  ]);
-  const [successPageConfig, setSuccessPageConfig] = useState({
-    title: "Registration Successful!",
-    message: "Thank you for registering. We'll send you a confirmation email shortly.",
-    showDetails: true
-  });
+  const [registrationFields, setRegistrationFields] = useState([]);
+  const [successPageConfig, setSuccessPageConfig] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("event-details");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEventData = async () => {
+      try {
+        setLoading(true);
+        const response = await api.getEvent(eventId);
+        if (response.success) {
+          const e = response.data;
+          
+          // Parse start date and time
+          const startDT = new Date(e.start_date_time);
+          const endDT = new Date(e.end_date_time);
+          
+          const formatTime = (date) => {
+            let hours = date.getHours();
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const period = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            return {
+              time: `${hours.toString().padStart(2, '0')}:${minutes}`,
+              period
+            };
+          };
+
+          const startT = formatTime(startDT);
+          const endT = formatTime(endDT);
+
+          setFormData({
+            title: e.event_name,
+            description: e.description,
+            startDate: startDT.toISOString().split('T')[0],
+            startTime: startT.time,
+            startPeriod: startT.period,
+            endDate: endDT.toISOString().split('T')[0],
+            endTime: endT.time,
+            endPeriod: endT.period,
+            location: e.address,
+            category: e.category || "EVENT",
+            eventFor: e.event_for || "all",
+          });
+          setRegistrationFields(e.registration_fields || []);
+          setSuccessPageConfig(e.success_page_config || null);
+        }
+      } catch (error) {
+        setStatus({ type: "error", message: "Failed to load event data." });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (eventId) fetchEventData();
+  }, [eventId]);
+
+  const convertTo24Hour = (time, period) => {
+    let [hours, minutes] = time.split(':');
+    hours = parseInt(hours);
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${minutes}`;
+  };
 
   const steps = [
     { id: "event-details", label: "Event Details" },
@@ -142,13 +205,38 @@ function EventEdit() {
     setStatus({ type: "success", message: "Event form is valid. Event editing remains a UI-only demo." });
   };
 
-  const handleUpdateEvent = () => {
+  const handleUpdateEvent = async () => {
     if (!validateForm()) {
       setActiveTab("event-details");
       return;
     }
 
-    setStatus({ type: "success", message: "Event updated successfully! This is a UI-only demo." });
+    const startDateTime = `${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`;
+    const endDateTime = `${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`;
+
+    const eventPayload = {
+      event_name: formData.title,
+      description: formData.description,
+      start_date_time: startDateTime,
+      end_date_time: endDateTime,
+      address: formData.location,
+      event_for: formData.eventFor,
+      category: formData.category,
+      registration_fields: registrationFields,
+      success_page_config: successPageConfig
+    };
+
+    try {
+      setStatus({ type: "loading", message: "Updating event in database..." });
+      const response = await api.updateEvent(eventId, eventPayload);
+
+      if (response.success) {
+        setStatus({ type: "success", message: "Event updated successfully in database! 🎉" });
+        setTimeout(() => navigate("/admin/dashboard"), 2000);
+      }
+    } catch (error) {
+      setStatus({ type: "error", message: error.message || "Error updating event." });
+    }
   };
 
   return (
@@ -233,31 +321,73 @@ function EventEdit() {
                 <div className="section-grid columns-2">
                   <div className="form-group">
                     <label htmlFor="startDate" className="form-label">
-                      Start date & time
+                      Start date
                     </label>
-                    <input
-                      id="startDate"
-                      name="startDate"
-                      type="datetime-local"
-                      value={formData.startDate}
-                      onChange={handleChange}
-                      className={`input-field ${errors.startDate ? "input-error" : ""}`}
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        id="startDate"
+                        name="startDate"
+                        type="date"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        className={`input-field ${errors.startDate ? "input-error" : ""}`}
+                        style={{ flex: 2 }}
+                      />
+                      <input
+                        name="startTime"
+                        type="time"
+                        value={formData.startTime}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ flex: 1 }}
+                      />
+                      <select
+                        name="startPeriod"
+                        value={formData.startPeriod}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ width: "70px" }}
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
                     {errors.startDate && <div className="field-error">{errors.startDate}</div>}
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="endDate" className="form-label">
-                      End date & time
+                      End date
                     </label>
-                    <input
-                      id="endDate"
-                      name="endDate"
-                      type="datetime-local"
-                      value={formData.endDate}
-                      onChange={handleChange}
-                      className={`input-field ${errors.endDate ? "input-error" : ""}`}
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        id="endDate"
+                        name="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={handleChange}
+                        className={`input-field ${errors.endDate ? "input-error" : ""}`}
+                        style={{ flex: 2 }}
+                      />
+                      <input
+                        name="endTime"
+                        type="time"
+                        value={formData.endTime}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ flex: 1 }}
+                      />
+                      <select
+                        name="endPeriod"
+                        value={formData.endPeriod}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ width: "70px" }}
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
                     {errors.endDate && <div className="field-error">{errors.endDate}</div>}
                   </div>
                 </div>
@@ -275,6 +405,22 @@ function EventEdit() {
                     placeholder="Enter venue or online link"
                   />
                   {errors.location && <div className="field-error">{errors.location}</div>}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="eventFor" className="form-label">
+                    Event For
+                  </label>
+                  <select
+                    id="eventFor"
+                    name="eventFor"
+                    value={formData.eventFor}
+                    onChange={handleChange}
+                    className="input-field"
+                  >
+                    <option value="all">Everyone</option>
+                    <option value="tssia_members">TSSIA Members</option>
+                  </select>
                 </div>
               </form>
             </>

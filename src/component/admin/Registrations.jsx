@@ -1,26 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-
-const initialRegistrations = [
-  { id: 1,  name: "Arjun Mehta",   email: "arjun.mehta@email.com",   event: "Leadership Summit",     registeredAt: "2026-04-30T09:15:00", status: "pending" },
-  { id: 2,  name: "Priya Sharma",  email: "priya.sharma@email.com",  event: "Developer Hackathon",   registeredAt: "2026-04-30T10:30:00", status: "pending" },
-  { id: 3,  name: "Rahul Verma",   email: "rahul.verma@email.com",   event: "Community Training",    registeredAt: "2026-04-29T14:20:00", status: "pending" },
-  { id: 4,  name: "Sneha Patel",   email: "sneha.patel@email.com",   event: "Volunteer Orientation", registeredAt: "2026-04-29T11:45:00", status: "pending" },
-  { id: 5,  name: "Kiran Kumar",   email: "kiran.kumar@email.com",   event: "Leadership Summit",     registeredAt: "2026-04-28T16:00:00", status: "pending" },
-  { id: 6,  name: "Deepa Nair",    email: "deepa.nair@email.com",    event: "Tech Conference",       registeredAt: "2026-04-25T08:00:00", status: "approved", decidedAt: "2026-04-26T09:00:00" },
-  { id: 7,  name: "Amit Singh",    email: "amit.singh@email.com",    event: "Networking Breakfast",  registeredAt: "2026-04-24T10:00:00", status: "rejected", decidedAt: "2026-04-25T11:00:00" },
-  { id: 8,  name: "Meera Joshi",   email: "meera.joshi@email.com",   event: "Spring Conference",     registeredAt: "2026-04-23T12:00:00", status: "approved", decidedAt: "2026-04-24T13:00:00" },
-  { id: 9,  name: "Vijay Reddy",   email: "vijay.reddy@email.com",   event: "Developer Hackathon",   registeredAt: "2026-04-22T14:00:00", status: "rejected", decidedAt: "2026-04-23T15:00:00" },
-  { id: 10, name: "Anita Gupta",   email: "anita.gupta@email.com",   event: "Community Training",    registeredAt: "2026-04-21T16:00:00", status: "approved", decidedAt: "2026-04-22T17:00:00" },
-  { id: 11, name: "Ravi Shankar",  email: "ravi.shankar@email.com",  event: "Charity Gala",          registeredAt: "2026-04-20T09:00:00", status: "approved", decidedAt: "2026-04-21T10:00:00" },
-  { id: 12, name: "Kavitha Menon", email: "kavitha.menon@email.com", event: "Marketing Workshop",    registeredAt: "2026-04-19T11:00:00", status: "rejected", decidedAt: "2026-04-20T12:00:00" },
-  { id: 13, name: "Suresh Babu",   email: "suresh.babu@email.com",   event: "Leadership Summit",     registeredAt: "2026-04-18T10:00:00", status: "approved", decidedAt: "2026-04-19T09:00:00" },
-  { id: 14, name: "Nandita Roy",   email: "nandita.roy@email.com",   event: "Spring Conference",     registeredAt: "2026-04-17T11:00:00", status: "rejected", decidedAt: "2026-04-18T10:00:00" },
-  { id: 15, name: "Prakash Iyer",  email: "prakash.iyer@email.com",  event: "Tech Conference",       registeredAt: "2026-04-16T09:00:00", status: "approved", decidedAt: "2026-04-17T08:00:00" },
-];
+import api from "../../api/api";
 
 const PAGE_SIZE_OPTIONS = [10, 30, 50];
 
 function getInitials(name) {
+  if (!name) return "??";
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 function timeAgo(dateStr) {
@@ -99,7 +83,8 @@ const STATUS_TABS = [
 
 /* ── Component ───────────────────────────────────────────────────────────── */
 function Registrations() {
-  const [registrations, setRegistrations] = useState(initialRegistrations);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch]               = useState("");
   const [statusFilter, setStatusFilter]   = useState("all");
   const [eventFilter, setEventFilter]     = useState("");   // locked selection
@@ -107,13 +92,47 @@ function Registrations() {
   const [dropdownOpen, setDropdownOpen]   = useState(false);
   const [page, setPage]                   = useState(1);
   const [pageSize, setPageSize]           = useState(10);
+  const [totalCount, setTotalCount]       = useState(0);
+  const [allEvents, setAllEvents]           = useState([]);
   const comboRef                          = useRef(null);
 
-  const pendingCount = registrations.filter((r) => r.status === "pending").length;
-  const allEvents    = useMemo(
-    () => [...new Set(initialRegistrations.map((r) => r.event))].sort(),
-    []
-  );
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [regRes, eventsRes] = await Promise.all([
+        api.getAllRegistrations(page, pageSize),
+        api.getEvents(1, 100)
+      ]);
+
+      if (regRes.success) {
+        setRegistrations(regRes.data.map(r => ({
+          id: r.registration_id,
+          name: r.participant_name,
+          email: r.participant_email,
+          event: r.event_name,
+          registeredAt: r.created_at,
+          status: r.status_name.toLowerCase()
+        })));
+        setTotalCount(regRes.pagination.total);
+      }
+      if (eventsRes.success) {
+        setAllEvents(eventsRes.data.map(e => e.event_name).sort());
+      }
+    } catch (error) {
+      console.error("Error fetching registrations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [page, pageSize]);
+
+  const pendingCount = useMemo(() => 
+    registrations.filter(r => r.status === "pending").length
+  , [registrations]);
+
   const visibleEvents = useMemo(
     () => eventInput.trim()
       ? allEvents.filter((e) => e.toLowerCase().includes(eventInput.trim().toLowerCase()))
@@ -133,7 +152,7 @@ function Registrations() {
     const q = search.trim().toLowerCase();
     return registrations.filter((r) => {
       const matchStatus = statusFilter === "all" || r.status === statusFilter;
-      const matchSearch = !q || r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || r.event.toLowerCase().includes(q);
+      const matchSearch = !q || (r.name || "").toLowerCase().includes(q) || (r.email || "").toLowerCase().includes(q) || (r.event || "").toLowerCase().includes(q);
       const matchEvent  = !eventFilter || r.event === eventFilter;
       return matchStatus && matchSearch && matchEvent;
     });
@@ -155,18 +174,29 @@ function Registrations() {
     setPage(1);
   };
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const paginated  = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginated  = filtered; // Since we fetch per page, registrations IS the current page
 
-  const handleApprove = (id) => {
-    setRegistrations((prev) =>
-      prev.map((r) => r.id === id ? { ...r, status: "approved", decidedAt: new Date().toISOString() } : r)
-    );
+  const handleApprove = async (id) => {
+    try {
+      const response = await api.updateRegistrationStatus(id, "approved");
+      if (response.success) {
+        fetchData();
+      }
+    } catch (error) {
+      alert("Failed to approve: " + error.message);
+    }
   };
-  const handleReject = (id) => {
-    setRegistrations((prev) =>
-      prev.map((r) => r.id === id ? { ...r, status: "rejected", decidedAt: new Date().toISOString() } : r)
-    );
+
+  const handleReject = async (id) => {
+    try {
+      const response = await api.updateRegistrationStatus(id, "rejected");
+      if (response.success) {
+        fetchData();
+      }
+    } catch (error) {
+      alert("Failed to reject: " + error.message);
+    }
   };
 
   const counts = {

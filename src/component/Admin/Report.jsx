@@ -1,26 +1,5 @@
-import { useState, useMemo } from "react";
-
-/* ── Mock data ───────────────────────────────────────────────────────────── */
-const PARTICIPANTS = [
-  { id: 1,  name: "Arjun Mehta",      email: "arjun.mehta@corp.com",      phone: "+91 98765 43210", company: "Tech Corp",          designation: "Software Engineer",   membership: "Member",     event: "Leadership Summit",    qrPass: "QR-2026-001", status: "attended",  verifiedBy: "Ritu Singh",   registeredAt: "2026-04-20", attendedAt: "2026-04-28" },
-  { id: 2,  name: "Priya Sharma",     email: "priya.sharma@innovate.com",  phone: "+91 87654 32109", company: "Innovate Labs",       designation: "Product Manager",      membership: "Non-Member", event: "Leadership Summit",    qrPass: "QR-2026-002", status: "approved",  verifiedBy: "",             registeredAt: "2026-04-21", attendedAt: "" },
-  { id: 3,  name: "Rahul Verma",      email: "rahul.verma@globalind.com",  phone: "+91 76543 21098", company: "Global Industries",   designation: "Operations Head",      membership: "Member",     event: "Developer Hackathon",  qrPass: "QR-2026-003", status: "attended",  verifiedBy: "Deepak Joshi", registeredAt: "2026-04-18", attendedAt: "2026-04-25" },
-  { id: 4,  name: "Sneha Patel",      email: "sneha.patel@creative.com",   phone: "+91 65432 10987", company: "Creative Studios",    designation: "UX Designer",          membership: "Member",     event: "Developer Hackathon",  qrPass: "QR-2026-004", status: "attended",  verifiedBy: "Deepak Joshi", registeredAt: "2026-04-19", attendedAt: "2026-04-25" },
-  { id: 5,  name: "Kiran Kumar",      email: "kiran.kumar@finance.com",    phone: "+91 54321 09876", company: "Finance Group",       designation: "CFO",                  membership: "Member",     event: "Leadership Summit",    qrPass: "QR-2026-005", status: "approved",  verifiedBy: "",             registeredAt: "2026-04-22", attendedAt: "" },
-  { id: 6,  name: "Deepa Nair",       email: "deepa.nair@health.com",      phone: "+91 43210 98765", company: "Health Solutions",    designation: "Doctor",               membership: "Non-Member", event: "Tech Conference",       qrPass: "QR-2026-006", status: "attended",  verifiedBy: "Smita Das",    registeredAt: "2026-04-17", attendedAt: "2026-04-24" },
-  { id: 7,  name: "Amit Singh",       email: "amit.singh@techv.com",       phone: "+91 32109 87654", company: "Tech Ventures",       designation: "CEO",                  membership: "Member",     event: "Networking Breakfast",  qrPass: "QR-2026-007", status: "attended",  verifiedBy: "Ritu Singh",   registeredAt: "2026-04-16", attendedAt: "2026-04-23" },
-  { id: 8,  name: "Meera Joshi",      email: "meera.joshi@mktg.com",       phone: "+91 21098 76543", company: "Marketing Hub",       designation: "Marketing Lead",       membership: "Non-Member", event: "Spring Conference",     qrPass: "QR-2026-008", status: "attended",  verifiedBy: "Smita Das",    registeredAt: "2026-04-15", attendedAt: "2026-04-22" },
-  { id: 9,  name: "Vijay Reddy",      email: "vijay.reddy@data.com",       phone: "+91 10987 65432", company: "Data Systems",        designation: "Data Scientist",       membership: "Member",     event: "Developer Hackathon",  qrPass: "QR-2026-009", status: "approved",  verifiedBy: "",             registeredAt: "2026-04-20", attendedAt: "" },
-  { id: 10, name: "Anita Gupta",      email: "anita.gupta@design.com",     phone: "+91 09876 54321", company: "Design Studio",       designation: "Creative Director",    membership: "Member",     event: "Spring Conference",     qrPass: "QR-2026-010", status: "attended",  verifiedBy: "Ritu Singh",   registeredAt: "2026-04-14", attendedAt: "2026-04-21" },
-  { id: 11, name: "Ravi Shankar",     email: "ravi.shankar@charity.com",   phone: "+91 98761 23456", company: "Charity Foundation",  designation: "Director",             membership: "Member",     event: "Charity Gala",          qrPass: "QR-2026-011", status: "attended",  verifiedBy: "Deepak Joshi", registeredAt: "2026-04-13", attendedAt: "2026-04-20" },
-  { id: 12, name: "Kavitha Menon",    email: "kavitha.menon@law.com",      phone: "+91 87652 34567", company: "Legal Associates",    designation: "Lawyer",               membership: "Non-Member", event: "Marketing Workshop",    qrPass: "QR-2026-012", status: "attended",  verifiedBy: "Smita Das",    registeredAt: "2026-04-12", attendedAt: "2026-04-19" },
-  { id: 13, name: "Suresh Babu",      email: "suresh.babu@techcorp.com",   phone: "+91 76543 45678", company: "Tech Corp",           designation: "DevOps Lead",          membership: "Member",     event: "Tech Conference",       qrPass: "QR-2026-013", status: "approved",  verifiedBy: "",             registeredAt: "2026-04-11", attendedAt: "" },
-  { id: 14, name: "Nandita Roy",      email: "nandita.roy@innovate.com",   phone: "+91 65432 56789", company: "Innovate Labs",       designation: "Business Analyst",     membership: "Non-Member", event: "Leadership Summit",     qrPass: "QR-2026-014", status: "attended",  verifiedBy: "Ritu Singh",   registeredAt: "2026-04-10", attendedAt: "2026-04-28" },
-  { id: 15, name: "Prakash Iyer",     email: "prakash.iyer@global.com",    phone: "+91 54321 67890", company: "Global Industries",   designation: "VP Operations",        membership: "Member",     event: "Networking Breakfast",  qrPass: "QR-2026-015", status: "attended",  verifiedBy: "Deepak Joshi", registeredAt: "2026-04-09", attendedAt: "2026-04-23" },
-];
-
-const ALL_EVENTS = [...new Set(PARTICIPANTS.map((p) => p.event))].sort();
-const PAGE_SIZES  = [10, 25, 50];
+import { useState, useMemo, useEffect } from "react";
+import api from "../../api/api";
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 function exportCSV(rows, filename) {
@@ -58,8 +37,13 @@ const TABS = [
   { key: "member",       label: "Member-wise" },
 ];
 
+const PAGE_SIZES  = [10, 25, 50];
+
 /* ── Main component ──────────────────────────────────────────────────────── */
 export default function Report() {
+  const [registrations, setRegistrations] = useState([]);
+  const [eventsList, setEventsList]       = useState([]);
+  const [loading, setLoading]             = useState(true);
   const [eventFilter, setEventFilter]     = useState("all");
   const [statusFilter, setStatusFilter]   = useState("all");
   const [search, setSearch]               = useState("");
@@ -69,10 +53,49 @@ export default function Report() {
   const [page, setPage]                   = useState(1);
   const [pageSize, setPageSize]           = useState(10);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [regRes, eventsRes] = await Promise.all([
+          api.getAllRegistrations(1, 1000), 
+          api.getEvents(1, 100)
+        ]);
+
+        if (regRes.success) {
+          setRegistrations(regRes.data.map(r => ({
+            id: r.registration_id,
+            name: r.participant_name,
+            email: r.participant_email,
+            phone: r.participant_phone,
+            company: r.organization || "N/A",
+            designation: r.designation || "N/A",
+            membership: r.tssia_membership_id ? "Member" : "Non-Member",
+            event: r.event_name,
+            qrPass: `PASS-${r.registration_id}`, 
+            status: r.status_name.toLowerCase(),
+            verifiedBy: r.verified_by_name || "", 
+            registeredAt: r.created_at,
+            attendedAt: r.attended_at || ""
+          })));
+        }
+
+        if (eventsRes.success) {
+          setEventsList(eventsRes.data.map(e => e.event_name));
+        }
+      } catch (error) {
+        console.error("Error fetching report data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   /* base filtered list (event + status + search) */
   const base = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return PARTICIPANTS.filter((p) => {
+    return registrations.filter((p) => {
       const eMatch = eventFilter === "all" || p.event === eventFilter;
       const sMatch = statusFilter === "all" || p.status === statusFilter;
       const qMatch = !q || p.name.toLowerCase().includes(q)
@@ -81,7 +104,7 @@ export default function Report() {
         || p.qrPass.toLowerCase().includes(q);
       return eMatch && sMatch && qMatch;
     });
-  }, [eventFilter, statusFilter, search]);
+  }, [registrations, eventFilter, statusFilter, search]);
 
   /* stats from base */
   const stats = useMemo(() => ({
@@ -183,21 +206,25 @@ export default function Report() {
 
       {/* ── Stat cards ──────────────────────────────────────── */}
       <div className="rp-stats">
-        {[
-          { label: "Total Registered",  value: stats.registered, icon: <I.Users/> },
-          { label: "Total Approved",    value: stats.approved,   icon: <I.Check/> },
-          { label: "Total Attended",    value: stats.attended,   icon: <I.Shield/> },
-          { label: "Companies",         value: companyGroups.length, icon: <I.Building/> },
-        ].map((s, i) => (
-          <div key={i} className="rp-stat">
-            <div className="rp-stat-accent"/>
-            <div className="rp-stat-icon">{s.icon}</div>
-            <div>
-              <div className="rp-stat-val">{s.value}</div>
-              <div className="rp-stat-lbl">{s.label}</div>
+        {loading ? (
+          <div className="text-muted p-3">Loading statistics...</div>
+        ) : (
+          [
+            { label: "Total Registered",  value: stats.registered, icon: <I.Users/> },
+            { label: "Total Approved",    value: stats.approved,   icon: <I.Check/> },
+            { label: "Total Attended",    value: stats.attended,   icon: <I.Shield/> },
+            { label: "Companies",         value: companyGroups.length, icon: <I.Building/> },
+          ].map((s, i) => (
+            <div key={i} className="rp-stat">
+              <div className="rp-stat-accent"/>
+              <div className="rp-stat-icon">{s.icon}</div>
+              <div>
+                <div className="rp-stat-val">{s.value}</div>
+                <div className="rp-stat-lbl">{s.label}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* ── Filters ─────────────────────────────────────────── */}
@@ -225,7 +252,7 @@ export default function Report() {
             <select className="rp-select" value={eventFilter}
               onChange={(e) => { setEventFilter(e.target.value); resetPage(); }}>
               <option value="all">All Events</option>
-              {ALL_EVENTS.map((e) => <option key={e} value={e}>{e}</option>)}
+              {eventsList.map((e) => <option key={e} value={e}>{e}</option>)}
             </select>
           </div>
 
@@ -272,7 +299,9 @@ export default function Report() {
       {tab === "participants" && (
         <div className="rp-card">
           <div className="rp-table-wrap">
-            {paginated.length === 0 ? (
+            {loading ? (
+              <div className="rp-empty"><p>Loading participants...</p></div>
+            ) : paginated.length === 0 ? (
               <div className="rp-empty">
                 <I.Report/>
                 <p>No participants found</p>
@@ -350,7 +379,7 @@ export default function Report() {
           </div>
 
           {/* Pagination */}
-          {sorted.length > pageSize && (
+          {!loading && sorted.length > pageSize && (
             <div className="rp-pagination">
               <span className="rp-pg-info">
                 {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} of {sorted.length}
@@ -379,7 +408,9 @@ export default function Report() {
       {tab === "company" && (
         <div className="rp-card">
           <div className="rp-table-wrap">
-            {companyGroups.length === 0 ? (
+            {loading ? (
+               <div className="rp-empty"><p>Loading data...</p></div>
+            ) : companyGroups.length === 0 ? (
               <div className="rp-empty"><I.Report/><p>No data</p><span>Adjust filters</span></div>
             ) : (
               <table className="rp-table">
@@ -420,7 +451,9 @@ export default function Report() {
       {tab === "member" && (
         <div className="rp-card">
           <div className="rp-table-wrap">
-            {memberGroups.length === 0 ? (
+            {loading ? (
+               <div className="rp-empty"><p>Loading data...</p></div>
+            ) : memberGroups.length === 0 ? (
               <div className="rp-empty"><I.Report/><p>No data</p><span>Adjust filters</span></div>
             ) : (
               <table className="rp-table">
@@ -631,7 +664,7 @@ export default function Report() {
         }
         .rp-badge--member    { background: #111827; color: #fbbf24; }
         .rp-badge--non       { background: #f1f5f9; color: #6b7280; border: 1px solid #e2e8f0; }
-        .rp-badge--attended  { background: #fefce8; color: #854d0e; border: 1px solid #fde047; }
+        .rp-badge--attended  { background: #fefce8; color: #854d0e; border: 1px solid #fde04Yellow; }
         .rp-badge--approved  { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
         .rp-badge--pending   { background: #f8fafc; color: #9ca3af; border: 1px solid #e2e8f0; }
 
@@ -643,7 +676,7 @@ export default function Report() {
           border: 1px solid #e2e8f0;
         }
         .rp-num-chip--green { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-        .rp-num-chip--yellow { background: #fefce8; color: #854d0e; border-color: #fde047; }
+        .rp-num-chip--yellow { background: #fefce8; color: #854d0Yellow; border-color: #fde04Yellow; }
 
         /* Company cell */
         .rp-company-cell { display: flex; align-items: center; gap: 10px; }

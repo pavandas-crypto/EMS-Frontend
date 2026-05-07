@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RegistrationFormBuilder from "./RegistrationFormBuilder";
 import SuccessPageBuilder from "./SuccessPageBuilder";
+import api from "../../api/api";
 
 // Utility function to generate unique event ID
 const generateEventId = () => {
@@ -12,11 +13,16 @@ function EventCreate() {
     title: "",
     description: "",
     startDate: "",
+    startTime: "09:00",
+    startPeriod: "AM",
     endDate: "",
+    endTime: "05:00",
+    endPeriod: "PM",
     location: "",
     capacity: "",
     entryFee: "",
     category: "EVENT",
+    eventFor: "all",
     additionalInfo: "",
   });
   const [organizer, setOrganizer] = useState({
@@ -120,26 +126,14 @@ function EventCreate() {
 
     if (!formData.title.trim()) nextErrors.title = "Event title is required.";
     if (!formData.description.trim()) nextErrors.description = "Event description is required.";
-    if (!formData.startDate) nextErrors.startDate = "Start date and time are required.";
-    if (!formData.endDate) nextErrors.endDate = "End date and time are required.";
-    if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
-      nextErrors.endDate = "End time must be later than start time.";
-    }
+    if (!formData.startDate) nextErrors.startDate = "Start date is required.";
+    if (!formData.endDate) nextErrors.endDate = "End date is required.";
     if (!formData.location.trim()) nextErrors.location = "Event location is required.";
 
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
       setStatus({ type: "error", message: "Please fix the highlighted fields to continue.", eventId: "" });
-      // Scroll to first error field
-      setTimeout(() => {
-        const firstErrorField = Object.keys(nextErrors)[0];
-        const element = document.getElementById(firstErrorField);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.focus();
-        }
-      }, 100);
       return false;
     }
 
@@ -147,49 +141,66 @@ function EventCreate() {
     return true;
   };
 
+  const convertTo24Hour = (time, period) => {
+    let [hours, minutes] = time.split(':');
+    hours = parseInt(hours);
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${minutes}`;
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
     // This is for form navigation only - actual event creation happens in handleCreateEvent
   };
 
-  const handleCreateEvent = () => {
+  const handleCreateEvent = async () => {
     if (!validateForm()) {
       setActiveTab("event-details");
       return;
     }
 
-    // Create new event object
-    const eventId = generateEventId();
-    const newEvent = {
-      id: eventId,
-      ...formData,
+    // Prepare date-time strings
+    const startDateTime = `${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`;
+    const endDateTime = `${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`;
+
+    // Map to backend schema
+    const eventPayload = {
+      event_name: formData.title,
+      description: formData.description,
+      start_date_time: startDateTime,
+      end_date_time: endDateTime,
+      address: formData.location,
+      event_for: formData.eventFor,
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
-      entryFee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
-      organizer: organizer.name ? organizer : null,
-      registrationFields,
-      successPageConfig,
-      createdAt: new Date().toISOString(),
+      entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+      category: formData.category,
+      additional_info: formData.additionalInfo,
+      organizer_details: organizer.name ? organizer : null,
+      registration_fields: registrationFields,
+      success_page_config: successPageConfig
     };
 
-    // Store event in localStorage
     try {
-      const existingEvents = JSON.parse(localStorage.getItem("events")) || [];
-      existingEvents.push(newEvent);
-      localStorage.setItem("events", JSON.stringify(existingEvents));
+      setStatus({ type: "loading", message: "Creating event in database..." });
+      const response = await api.createEvent(eventPayload);
 
-      const landingPageUrl = `/event/${eventId}`;
-      
-      setCreatedEventId(eventId);
-      setStatus({
-        type: "success",
-        message: `Event "${formData.title}" created successfully! 🎉 Landing page is ready for preview.`,
-        eventId: eventId,
-        landingPageUrl: landingPageUrl,
-      });
+      if (response.success) {
+        const eventId = response.data.event_id;
+        const landingPageUrl = `/event/${eventId}`;
+        
+        setCreatedEventId(eventId);
+        setStatus({
+          type: "success",
+          message: `Event "${formData.title}" created successfully in database! 🎉`,
+          eventId: eventId,
+          landingPageUrl: landingPageUrl,
+        });
+      }
     } catch (error) {
       setStatus({
         type: "error",
-        message: "Error creating event. Please try again.",
+        message: error.message || "Error creating event. Please try again.",
         eventId: "",
         landingPageUrl: "",
       });
@@ -339,31 +350,73 @@ function EventCreate() {
                 <div className="section-grid columns-2">
                   <div className="form-group">
                     <label htmlFor="startDate" className="form-label">
-                      Start date & time
+                      Start date
                     </label>
-                    <input
-                      id="startDate"
-                      name="startDate"
-                      type="datetime-local"
-                      value={formData.startDate}
-                      onChange={handleChange}
-                      className={`input-field ${errors.startDate ? "input-error" : ""}`}
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        id="startDate"
+                        name="startDate"
+                        type="date"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        className={`input-field ${errors.startDate ? "input-error" : ""}`}
+                        style={{ flex: 2 }}
+                      />
+                      <input
+                        name="startTime"
+                        type="time"
+                        value={formData.startTime}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ flex: 1 }}
+                      />
+                      <select
+                        name="startPeriod"
+                        value={formData.startPeriod}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ width: "70px" }}
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
                     {errors.startDate && <div className="field-error">{errors.startDate}</div>}
                   </div>
 
                   <div className="form-group">
                     <label htmlFor="endDate" className="form-label">
-                      End date & time
+                      End date
                     </label>
-                    <input
-                      id="endDate"
-                      name="endDate"
-                      type="datetime-local"
-                      value={formData.endDate}
-                      onChange={handleChange}
-                      className={`input-field ${errors.endDate ? "input-error" : ""}`}
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        id="endDate"
+                        name="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={handleChange}
+                        className={`input-field ${errors.endDate ? "input-error" : ""}`}
+                        style={{ flex: 2 }}
+                      />
+                      <input
+                        name="endTime"
+                        type="time"
+                        value={formData.endTime}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ flex: 1 }}
+                      />
+                      <select
+                        name="endPeriod"
+                        value={formData.endPeriod}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ width: "70px" }}
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
                     {errors.endDate && <div className="field-error">{errors.endDate}</div>}
                   </div>
                 </div>
@@ -402,6 +455,22 @@ function EventCreate() {
                       <option value="MEETUP">Meetup</option>
                       <option value="GALA">Gala</option>
                       <option value="TRAINING">Training</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="eventFor" className="form-label">
+                      Event For
+                    </label>
+                    <select
+                      id="eventFor"
+                      name="eventFor"
+                      value={formData.eventFor}
+                      onChange={handleChange}
+                      className="input-field"
+                    >
+                      <option value="all">Everyone</option>
+                      <option value="tssia_members">TSSIA Members</option>
                     </select>
                   </div>
 
