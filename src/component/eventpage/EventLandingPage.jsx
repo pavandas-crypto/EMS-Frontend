@@ -28,10 +28,10 @@ function EventLandingPage() {
             entryFee: eventData.entry_fee,
             additionalInfo: eventData.additional_info,
             organizer: {
-              name: eventData.organizer_name,
-              email: eventData.organizer_email,
-              phone: eventData.organizer_phone,
-              role: eventData.organizer_role,
+              name: eventData.organizer_name || "TSSIA Team",
+              email: eventData.organizer_email || "info@tssia.org",
+              phone: eventData.organizer_phone || "+91 9826000000",
+              role: eventData.organizer_role || "Event Organizer",
             }
           });
         }
@@ -211,7 +211,14 @@ function EventLandingPage() {
             </div>
             <div className="detail-box-content">
               <span className="detail-box-label">ENTRY</span>
-              <span className="detail-box-value">{event.entryFee > 0 ? `₹${event.entryFee}` : "Free Entry"}</span>
+              <div className="entry-details">
+                <span className="detail-box-value">{event.entryFee > 0 ? `₹${event.entryFee}` : "Free Entry"}</span>
+                {event.capacity > 0 && (
+                  <span className="detail-box-sub" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                    • {event.capacity} Spots Available
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
