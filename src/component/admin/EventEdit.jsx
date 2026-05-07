@@ -19,6 +19,16 @@ function EventEdit() {
     location: "",
     category: "EVENT",
     eventFor: "all",
+    capacity: "",
+    entryFee: "",
+    additionalInfo: "",
+  });
+  const [organizer, setOrganizer] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    role: "Event Organizer",
+    image: "",
   });
   const [registrationFields, setRegistrationFields] = useState([]);
   const [successPageConfig, setSuccessPageConfig] = useState(null);
@@ -65,6 +75,16 @@ function EventEdit() {
             location: e.address,
             category: e.category || "EVENT",
             eventFor: e.event_for || "all",
+            capacity: e.capacity || "",
+            entryFee: e.entry_fee || "",
+            additionalInfo: e.additional_info || "",
+          });
+          setOrganizer({
+            name: e.organizer_name || "",
+            email: e.organizer_email || "",
+            phone: e.organizer_phone || "",
+            role: e.organizer_role || "Event Organizer",
+            image: "",
           });
           setRegistrationFields(e.registration_fields || []);
           setSuccessPageConfig(e.success_page_config || null);
@@ -97,120 +117,42 @@ function EventEdit() {
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
-      // Validate current step before proceeding
       if (activeTab === "event-details") {
         const nextErrors = {};
-
         if (!formData.title.trim()) nextErrors.title = "Event title is required.";
         if (!formData.description.trim()) nextErrors.description = "Event description is required.";
-        if (!formData.startDate) nextErrors.startDate = "Start date and time are required.";
-        if (!formData.endDate) nextErrors.endDate = "End date and time are required.";
-        if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
-          nextErrors.endDate = "End time must be later than start time.";
-        }
-        if (!formData.location.trim()) nextErrors.location = "Event location is required.";
-
+        if (!formData.startDate) nextErrors.startDate = "Start date is required.";
+        if (!formData.endDate) nextErrors.endDate = "End date is required.";
+        if (!formData.location.trim()) nextErrors.location = "Location is required.";
         setErrors(nextErrors);
-
         if (Object.keys(nextErrors).length > 0) {
-          setStatus({ type: "error", message: "Please complete all required fields before proceeding to the next step." });
-          // Scroll to first error field
-          setTimeout(() => {
-            const firstErrorField = Object.keys(nextErrors)[0];
-            const element = document.getElementById(firstErrorField);
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              element.focus();
-            }
-          }, 100);
+          setStatus({ type: "error", message: "Please complete all required fields." });
           return;
         }
       }
-
       setActiveTab(steps[currentStepIndex + 1].id);
       setStatus({ type: "", message: "" });
-      // Scroll to top of new tab
-      setTimeout(() => {
-        const cardElement = document.querySelector('.card');
-        if (cardElement) {
-          cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 100);
     }
   };
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
       setActiveTab(steps[currentStepIndex - 1].id);
-      // Scroll to top of new tab
-      setTimeout(() => {
-        const cardElement = document.querySelector('.card');
-        if (cardElement) {
-          cardElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 100);
     }
   };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setStatus({ type: "", message: "" });
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const validateForm = () => {
-    const nextErrors = {};
-
-    if (!formData.title.trim()) nextErrors.title = "Event title is required.";
-    if (!formData.description.trim()) nextErrors.description = "Event description is required.";
-    if (!formData.startDate) nextErrors.startDate = "Start date and time are required.";
-    if (!formData.endDate) nextErrors.endDate = "End date and time are required.";
-    if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
-      nextErrors.endDate = "End time must be later than start time.";
-    }
-    if (!formData.location.trim()) nextErrors.location = "Event location is required.";
-
-    setErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length > 0) {
-      setStatus({ type: "error", message: "Please fix the highlighted fields to continue." });
-      // Scroll to first error field
-      setTimeout(() => {
-        const firstErrorField = Object.keys(nextErrors)[0];
-        const element = document.getElementById(firstErrorField);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.focus();
-        }
-      }, 100);
-      return false;
-    }
-
-    setStatus({ type: "", message: "" });
-    return true;
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-
-    setStatus({ type: "success", message: "Event form is valid. Event editing remains a UI-only demo." });
+  const handleOrganizerChange = (event) => {
+    const { name, value } = event.target;
+    setOrganizer((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleUpdateEvent = async () => {
-    if (!validateForm()) {
-      setActiveTab("event-details");
-      return;
-    }
-
     const startDateTime = `${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`;
     const endDateTime = `${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`;
 
@@ -222,375 +164,134 @@ function EventEdit() {
       address: formData.location,
       event_for: formData.eventFor,
       category: formData.category,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+      entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+      additional_info: formData.additionalInfo,
+      organizer_details: organizer.name ? organizer : null,
       registration_fields: registrationFields,
       success_page_config: successPageConfig
     };
 
     try {
-      setStatus({ type: "loading", message: "Updating event in database..." });
+      setStatus({ type: "loading", message: "Updating event..." });
       const response = await api.updateEvent(eventId, eventPayload);
-
       if (response.success) {
-        setStatus({ type: "success", message: "Event updated successfully in database! 🎉" });
-        setTimeout(() => navigate("/admin/dashboard"), 2000);
+        setStatus({ type: "success", message: "Event updated successfully! 🎉" });
+        setTimeout(() => navigate("/admin/dashboard"), 1500);
       }
     } catch (error) {
-      setStatus({ type: "error", message: error.message || "Error updating event." });
+      setStatus({ type: "error", message: error.message || "Update failed." });
     }
   };
+
+  if (loading) return <div className="page-shell"><div className="card">Loading event...</div></div>;
 
   return (
     <div className="page-shell">
       <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
         <div className="card-header panel-header">
-          <div>
-            <p className="panel-label">Event editing</p>
-            <h1 className="page-title">Edit event</h1>
-          </div>
+           <h1 className="page-title">Edit Event</h1>
         </div>
 
-        {/* Tabs */}
         <div className="ec-tabs">
-          <button
-            type="button"
-            className={`ec-tab ${activeTab === "event-details" ? "ec-tab--active" : ""}`}
-            disabled
-          >
-            Event Details
-          </button>
-          <button
-            type="button"
-            className={`ec-tab ${activeTab === "registration-form" ? "ec-tab--active" : ""}`}
-            disabled
-          >
-            Registration Form
-          </button>
-          <button
-            type="button"
-            className={`ec-tab ${activeTab === "success-page" ? "ec-tab--active" : ""}`}
-            disabled
-          >
-            Success Page
-          </button>
+          {steps.map(step => (
+            <button
+              key={step.id}
+              className={`ec-tab ${activeTab === step.id ? "ec-tab--active" : ""}`}
+              onClick={() => setActiveTab(step.id)}
+            >
+              {step.label}
+            </button>
+          ))}
         </div>
 
         <div className="card-body">
-          {/* Event Details Tab */}
+          {status.message && (
+            <div className={`alert ${status.type === "success" ? "alert-success" : (status.type === "loading" ? "alert-info" : "alert-error")}`}>
+              {status.message}
+            </div>
+          )}
+
           {activeTab === "event-details" && (
-            <>
-              <p className="panel-copy">Update the basic event information and schedule.</p>
-
-              {status.message && (
-                <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
-                  {status.message}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label htmlFor="title" className="form-label">
-                    Event title
-                  </label>
-                  <input
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    className={`input-field ${errors.title ? "input-error" : ""}`}
-                    placeholder="Enter event title"
-                  />
-                  {errors.title && <div className="field-error">{errors.title}</div>}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="description" className="form-label">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows="4"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className={`textarea-field ${errors.description ? "input-error" : ""}`}
-                    placeholder="Describe the event purpose and expected outcomes"
-                  />
-                  {errors.description && <div className="field-error">{errors.description}</div>}
-                </div>
-
-                <div className="section-grid columns-2">
-                  <div className="form-group">
-                    <label htmlFor="startDate" className="form-label">
-                      Start date
-                    </label>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <input
-                        id="startDate"
-                        name="startDate"
-                        type="date"
-                        value={formData.startDate}
-                        onChange={handleChange}
-                        className={`input-field ${errors.startDate ? "input-error" : ""}`}
-                        style={{ flex: 2 }}
-                      />
-                      <input
-                        name="startTime"
-                        type="time"
-                        value={formData.startTime}
-                        onChange={handleChange}
-                        className="input-field"
-                        style={{ flex: 1 }}
-                      />
-                      <select
-                        name="startPeriod"
-                        value={formData.startPeriod}
-                        onChange={handleChange}
-                        className="input-field"
-                        style={{ width: "70px" }}
-                      >
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                      </select>
-                    </div>
-                    {errors.startDate && <div className="field-error">{errors.startDate}</div>}
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="endDate" className="form-label">
-                      End date
-                    </label>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <input
-                        id="endDate"
-                        name="endDate"
-                        type="date"
-                        value={formData.endDate}
-                        onChange={handleChange}
-                        className={`input-field ${errors.endDate ? "input-error" : ""}`}
-                        style={{ flex: 2 }}
-                      />
-                      <input
-                        name="endTime"
-                        type="time"
-                        value={formData.endTime}
-                        onChange={handleChange}
-                        className="input-field"
-                        style={{ flex: 1 }}
-                      />
-                      <select
-                        name="endPeriod"
-                        value={formData.endPeriod}
-                        onChange={handleChange}
-                        className="input-field"
-                        style={{ width: "70px" }}
-                      >
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                      </select>
-                    </div>
-                    {errors.endDate && <div className="field-error">{errors.endDate}</div>}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="location" className="form-label">
-                    Location
-                  </label>
-                  <input
-                    id="location"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                    className={`input-field ${errors.location ? "input-error" : ""}`}
-                    placeholder="Enter venue or online link"
-                  />
-                  {errors.location && <div className="field-error">{errors.location}</div>}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="eventFor" className="form-label">
-                    Event For
-                  </label>
-                  <select
-                    id="eventFor"
-                    name="eventFor"
-                    value={formData.eventFor}
-                    onChange={handleChange}
-                    className="input-field"
-                  >
-                    <option value="all">Everyone</option>
-                    <option value="tssia_members">TSSIA Members</option>
-                  </select>
-                </div>
-              </form>
-            </>
-          )}
-
-          {/* Registration Form Tab */}
-          {activeTab === "registration-form" && (
-            <>
-              <p className="panel-copy">Update the participant registration form fields.</p>
-              <RegistrationFormBuilder
-                onSave={(fields) => {
-                  setRegistrationFields(fields);
-                  setStatus({ type: "success", message: "Registration form fields updated successfully!" });
-                }}
-              />
-            </>
-          )}
-
-          {/* Success Page Tab */}
-          {activeTab === "success-page" && (
-            <>
-              <p className="panel-copy">Update the page participants see after successful registration.</p>
-              <SuccessPageBuilder
-                onSave={(config) => {
-                  setSuccessPageConfig(config);
-                  setStatus({ type: "success", message: "Success page configuration updated successfully!" });
-                }}
-              />
-              <div className="success-action-row">
-                <button
-                  type="button"
-                  className="button button-primary"
-                  onClick={handleUpdateEvent}
-                >
-                  Update Event
-                </button>
+            <div className="form-container">
+              <div className="form-group">
+                <label className="form-label">Title</label>
+                <input name="title" value={formData.title} onChange={handleChange} className="input-field" />
               </div>
-            </>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea name="description" rows="4" value={formData.description} onChange={handleChange} className="textarea-field" />
+              </div>
+              <div className="section-grid columns-2">
+                <div className="form-group">
+                  <label className="form-label">Start Date</label>
+                  <input name="startDate" type="date" value={formData.startDate} onChange={handleChange} className="input-field" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">End Date</label>
+                  <input name="endDate" type="date" value={formData.endDate} onChange={handleChange} className="input-field" />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Location</label>
+                <input name="location" value={formData.location} onChange={handleChange} className="input-field" />
+              </div>
+              <div className="section-grid columns-2">
+                <div className="form-group">
+                  <label className="form-label">Capacity</label>
+                  <input name="capacity" type="number" value={formData.capacity} onChange={handleChange} className="input-field" />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Entry Fee (₹)</label>
+                  <input name="entryFee" type="number" value={formData.entryFee} onChange={handleChange} className="input-field" />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Event Guide / Additional Info</label>
+                <textarea name="additionalInfo" rows="3" value={formData.additionalInfo} onChange={handleChange} className="textarea-field" />
+              </div>
+              <div className="organizer-section" style={{ background: "#f8fafc", padding: "1.5rem", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                <h3 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>Organizer Information</h3>
+                <div className="section-grid columns-2">
+                   <div className="form-group">
+                      <label className="form-label">Name</label>
+                      <input name="name" value={organizer.name} onChange={handleOrganizerChange} className="input-field" />
+                   </div>
+                   <div className="form-group">
+                      <label className="form-label">Phone</label>
+                      <input name="phone" value={organizer.phone} onChange={handleOrganizerChange} className="input-field" />
+                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "registration-form" && (
+            <RegistrationFormBuilder initialFields={registrationFields} onSave={setRegistrationFields} />
+          )}
+
+          {activeTab === "success-page" && (
+            <div>
+              <SuccessPageBuilder initialConfig={successPageConfig} onSave={setSuccessPageConfig} />
+              <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end" }}>
+                <button className="button button-primary" onClick={handleUpdateEvent}>Update Event</button>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Footer Navigation */}
         <div className="ec-footer">
-          {currentStepIndex > 0 && (
-            <button
-              className="button button-secondary ec-nav-button"
-              onClick={handlePrevious}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 18l-6-6 6-6"/>
-              </svg>
-              Previous
-            </button>
-          )}
-          {currentStepIndex === 0 && (
-            <div style={{ width: "120px" }}></div>
-          )}
-          <div className="ec-step-indicator">
-            Step {currentStepIndex + 1} of {steps.length}: {steps[currentStepIndex].label}
-          </div>
-          {currentStepIndex < steps.length - 1 && (
-            <button
-              className="button button-primary ec-nav-button"
-              onClick={handleNext}
-            >
-              Next
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-            </button>
-          )}
-          {currentStepIndex === steps.length - 1 && (
-            <div style={{ width: "120px" }}></div>
-          )}
+          <button className="button button-secondary" onClick={handlePrevious} disabled={currentStepIndex === 0}>Previous</button>
+          <span>Step {currentStepIndex + 1} of 3</span>
+          <button className="button button-primary" onClick={handleNext} disabled={currentStepIndex === 2}>Next</button>
         </div>
       </div>
-
       <style>{`
-        .ec-tabs {
-          display: flex;
-          gap: 8px;
-          border-bottom: 1px solid #e5e7eb;
-          padding: 0 20px;
-          background: #f9fafb;
-        }
-
-        .ec-tab {
-          padding: 12px 16px;
-          border: none;
-          background: transparent;
-          border-bottom: 3px solid transparent;
-          font-size: 13px;
-          font-weight: 600;
-          color: #6b7280;
-          cursor: pointer;
-          transition: all 0.2s;
-          white-space: nowrap;
-        }
-
-        .ec-tab:hover {
-          color: #111827;
-          background: #f3f4f6;
-        }
-
-        .ec-tab:disabled {
-          cursor: default;
-          opacity: 1;
-          background: transparent;
-        }
-
-        .ec-tab--active {
-          border-bottom-color: #fbbf24;
-          color: #111827;
-        }
-
-        .ec-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px;
-          background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-neutral-50) 100%);
-          border-top: 1px solid var(--color-neutral-200);
-          border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-          box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .ec-step-indicator {
-          font-size: 14px;
-          font-weight: 600;
-          color: var(--color-neutral-700);
-          background: rgba(255, 255, 255, 0.8);
-          padding: 8px 16px;
-          border-radius: var(--radius-md);
-          border: 1px solid var(--color-neutral-200);
-        }
-
-        .ec-nav-button {
-          min-width: 120px;
-          font-weight: 600;
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .ec-nav-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-          transition: left 0.5s;
-        }
-
-        .ec-nav-button:hover::before {
-          left: 100%;
-        }
-
-        .ec-nav-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .success-action-row {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 1.5rem;
-        }
+        .ec-tabs { display: flex; gap: 8px; padding: 0 20px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+        .ec-tab { padding: 12px 20px; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent; transition: 0.2s; }
+        .ec-tab--active { color: #111827; border-bottom-color: #fbbf24; }
+        .ec-footer { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-top: 1px solid #e5e7eb; background: #fff; }
+        .form-container { display: flex; flex-direction: column; gap: 1.5rem; }
       `}</style>
     </div>
   );

@@ -83,77 +83,97 @@ const Icon = {
 
 /* ── Event combobox multi-select ─────────────────────────────────────────── */
 function EventMultiSelect({ selected, onChange, error, events = [] }) {
-  const [open, setOpen]       = useState(false);
-  const [query, setQuery]     = useState("");
-  const ref                   = useRef(null);
-  const inputRef              = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) { setOpen(false); setQuery(""); } };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filtered = query.trim()
-    ? events.filter((e) => e.toLowerCase().includes(query.trim().toLowerCase()))
-    : events;
+  const filtered = events.filter((e) =>
+    e.toLowerCase().includes(query.toLowerCase())
+  );
 
   const toggle = (ev) => {
-    onChange(selected.includes(ev) ? selected.filter((e) => e !== ev) : [...selected, ev]);
-    setQuery("");
-    inputRef.current?.focus();
+    const newSelected = selected.includes(ev)
+      ? selected.filter((item) => item !== ev)
+      : [...selected, ev];
+    onChange(newSelected);
+    // Keep it open for multi-selection
   };
 
   return (
     <div className="vf-combo-wrap" ref={ref}>
-      <div className={`vf-combo-field${error ? " vf-input--err" : ""}${open ? " vf-combo-field--open" : ""}`}>
-        {/* Selected chips */}
-        {selected.map((ev) => (
-          <span key={ev} className="vf-chip">
-            {ev}
-            <button type="button" className="vf-chip-remove"
-              onClick={(e) => { e.stopPropagation(); toggle(ev); }}>
-              <Icon.X s={10}/>
-            </button>
-          </span>
-        ))}
-
-        {/* Inline type-to-search input */}
-        <input
-          ref={inputRef}
-          className="vf-combo-input"
-          placeholder={selected.length === 0 ? "Type or select events…" : "Add more…"}
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-        />
-
-        {/* Dropdown arrow */}
-        <button type="button" className="vf-combo-arrow"
-          onClick={() => { setOpen((o) => !o); inputRef.current?.focus(); }}>
-          <Icon.ChevronDown s={12}/>
-        </button>
+      <div 
+        className={`vf-combo-field ${error ? "vf-input--err" : ""} ${open ? "vf-combo-field--open" : ""}`}
+        onClick={() => {
+          setOpen(true);
+          inputRef.current?.focus();
+        }}
+      >
+        <div className="vf-selected-area">
+          {selected.map((ev) => (
+            <span key={ev} className="vf-chip">
+              {ev}
+              <button
+                type="button"
+                className="vf-chip-remove"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggle(ev);
+                }}
+              >
+                <Icon.X s={10} />
+              </button>
+            </span>
+          ))}
+          <input
+            ref={inputRef}
+            className="vf-combo-input"
+            placeholder={selected.length === 0 ? "Select events..." : ""}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+          />
+        </div>
+        <div className="vf-combo-arrow">
+          <Icon.ChevronDown s={14} />
+        </div>
       </div>
 
       {open && (
-        <ul className="vf-multi-dropdown">
+        <div className="vf-multi-dropdown">
           {filtered.length === 0 ? (
-            <li className="vf-multi-option vf-multi-option--empty">No matching events</li>
+            <div className="vf-multi-option vf-multi-option--empty">No events found</div>
           ) : (
             filtered.map((ev) => (
-              <li
+              <div
                 key={ev}
-                className={`vf-multi-option${selected.includes(ev) ? " vf-multi-option--checked" : ""}`}
-                onMouseDown={(e) => { e.preventDefault(); toggle(ev); }}
+                className={`vf-multi-option ${selected.includes(ev) ? "vf-multi-option--checked" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggle(ev);
+                }}
               >
-                <span className="vf-checkbox">{selected.includes(ev) && <Icon.Check s={11}/>}</span>
-                <Icon.Calendar s={11}/>
-                {ev}
-                {selected.includes(ev) && <span className="vf-option-tick">✓</span>}
-              </li>
+                <div className="vf-checkbox">
+                  {selected.includes(ev) && <Icon.Check s={11} />}
+                </div>
+                <span className="vf-option-text">{ev}</span>
+              </div>
             ))
           )}
-        </ul>
+        </div>
       )}
     </div>
   );
@@ -175,26 +195,39 @@ function Verifiers() {
   const fetchVerifiers = async () => {
     try {
       setLoading(true);
-      const [usersRes, eventsRes] = await Promise.all([
-        api.getUsers(),
-        api.getEvents(1, 100)
-      ]);
       
-      if (usersRes.success) {
-        setVerifiers(usersRes.data.filter(u => u.role_name === 'verifier').map(u => ({
-          id: u.user_id,
-          name: u.name,
-          username: u.username,
-          email: u.email,
-          events: (u.assigned_events || []).map(e => e.event_name)
-        })));
+      // Fetch users
+      try {
+        const usersRes = await api.getUsers();
+        if (usersRes.success && Array.isArray(usersRes.data)) {
+          const vUsers = usersRes.data.filter(u => 
+            u.role_name?.toLowerCase() === 'verifier'
+          ).map(u => ({
+            id: u.user_id,
+            name: u.name,
+            username: u.username || u.email?.split('@')[0], // Fallback if username is null
+            email: u.email,
+            events: (u.assigned_events || []).map(e => e.event_name)
+          }));
+          setVerifiers(vUsers);
+        }
+      } catch (err) {
+        console.error("Error fetching verifiers:", err);
       }
 
-      if (eventsRes.success) {
-        setAllEventsList(eventsRes.data.map(e => ({ id: e.event_id, name: e.event_name })));
+      // Fetch events separately to ensure one failure doesn't block the other
+      try {
+        const eventsRes = await api.getEvents(1, 200);
+        if (eventsRes.success) {
+          const eventsData = Array.isArray(eventsRes.data) ? eventsRes.data : (eventsRes.data?.events || []);
+          setAllEventsList(eventsData.map(e => ({ id: e.event_id, name: e.event_name })));
+        }
+      } catch (err) {
+        console.error("Error fetching events:", err);
       }
+      
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Critical error in fetchVerifiers:", error);
     } finally {
       setLoading(false);
     }
@@ -619,24 +652,26 @@ function Verifiers() {
         /* Event combobox */
         .vf-combo-wrap { position: relative; }
         .vf-combo-field {
-          display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-          min-height: 42px; padding: 6px 36px 6px 10px; position: relative;
+          display: flex; align-items: center; justify-content: space-between;
+          min-height: 42px; padding: 6px 10px; position: relative;
           border: 1px solid #e2e8f0; border-radius: 7px;
-          background: #f8fafc; cursor: text;
+          background: #f8fafc; cursor: pointer;
           transition: border-color 0.12s, background 0.12s;
         }
         .vf-combo-field:focus-within, .vf-combo-field--open { border-color: #94a3b8; background: #fff; }
         .vf-combo-field.vf-input--err { border-color: #ef4444; }
+        .vf-selected-area {
+          display: flex; flex-wrap: wrap; gap: 4px; flex: 1; align-items: center;
+        }
         .vf-combo-input {
-          flex: 1; min-width: 120px; border: none; outline: none;
+          border: none; outline: none;
           background: transparent; font-size: 13px; color: #0f172a;
-          padding: 2px 0;
+          padding: 4px 0; min-width: 60px; flex: 1;
         }
         .vf-combo-input::placeholder { color: #94a3b8; }
         .vf-combo-arrow {
-          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-          background: none; border: none; cursor: pointer;
-          color: #94a3b8; display: flex; align-items: center; padding: 2px;
+          display: flex; align-items: center; justify-content: center;
+          color: #94a3b8; padding: 4px;
         }
         .vf-combo-arrow:hover { color: #475569; }
         .vf-chip {
@@ -657,14 +692,13 @@ function Verifiers() {
           max-height: 220px; overflow-y: auto;
         }
         .vf-multi-option {
-          display: flex; align-items: center; gap: 8px;
-          padding: 8px 14px; font-size: 12.5px; color: #374151;
-          cursor: pointer; transition: background 0.08s; position: relative;
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 14px; font-size: 13px; color: #374151;
+          cursor: pointer; transition: background 0.1s;
         }
         .vf-multi-option:hover { background: #f8fafc; }
         .vf-multi-option--checked { background: #f1f5f9; color: #0f172a; font-weight: 600; }
-        .vf-multi-option--empty { color: #94a3b8; font-style: italic; cursor: default; }
-        .vf-multi-option--empty:hover { background: transparent; }
+        .vf-multi-option--empty { padding: 16px; color: #94a3b8; font-style: italic; text-align: center; }
         .vf-checkbox {
           width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
           border: 1.5px solid #cbd5e1; background: #fff;

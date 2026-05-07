@@ -82,11 +82,22 @@ function RegisterForm() {
   return (
     <div className="page-shell auth-shell">
       <div className="panel card" style={{ maxWidth: "640px", margin: "0 auto" }}>
-        <div className="card-header panel-header">
+        <div className="card-header panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p className="panel-label">Event registration</p>
             <h1 className="page-title">Register for an event</h1>
           </div>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="button button-text"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#666', fontWeight: 600 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Back
+          </button>
         </div>
 
         <div className="card-body">
