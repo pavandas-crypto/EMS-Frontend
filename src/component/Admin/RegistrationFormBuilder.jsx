@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function RegistrationFormBuilder({ onSave }) {
+export default function RegistrationFormBuilder({ onSave, initialFields }) {
   const DEFAULT_FIELDS = [
     { id: "participant_name", label: "Participant Name", type: "text", required: true, order: 1 },
     { id: "designation", label: "Designation", type: "text", required: false, order: 2 },
@@ -11,7 +11,7 @@ export default function RegistrationFormBuilder({ onSave }) {
     { id: "membership_number", label: "Membership Number", type: "text", required: false, order: 7 },
   ];
 
-  const [fields, setFields] = useState(DEFAULT_FIELDS);
+  const [fields, setFields] = useState(initialFields && initialFields.length > 0 ? initialFields : DEFAULT_FIELDS);
   const [newField, setNewField] = useState({ label: "", type: "text", required: false });
   const [showAddField, setShowAddField] = useState(false);
 

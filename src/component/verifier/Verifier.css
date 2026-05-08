@@ -260,6 +260,12 @@
   .v-event-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
+@media (max-width: 640px) {
+  .v-page { padding: 1.5rem 0.75rem; }
+  .v-heading { font-size: 1.8rem; }
+  .v-card { padding: 1.25rem; }
+}
+
 .v-dashboard-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -269,6 +275,7 @@
 @media (min-width: 900px) {
   .v-dashboard-grid { grid-template-columns: 1fr 1fr; }
 }
+.v-dashboard-grid > * { min-width: 0; }
 
 .v-col-stack {
   display: flex;
@@ -289,25 +296,53 @@
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
 }
 
-/* Detailed Result overlay */
-.v-result {
-  position: absolute;
+/* Detailed Result overlay as a MODAL POPUP */
+.v-result-overlay {
+  position: fixed;
   inset: 0;
-  border-radius: 20px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.v-result {
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
-  padding: 2rem;
+  padding: 2.5rem 2rem;
   overflow-y: auto;
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 10;
+  animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   color: #ffffff;
+  position: relative;
 }
-.v-result--valid   { background: #1a1a1a; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-.v-result--dup     { background: #495057; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-.v-result--invalid { background: #868e96; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
 
-.v-result__icon  { font-size: 2.5rem; color: #fff; margin-bottom: 0.75rem; }
-.v-result__title { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.15); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalPop { 
+  from { opacity: 0; transform: scale(0.9) translateY(20px); } 
+  to { opacity: 1; transform: scale(1) translateY(0); } 
+}
+.v-result--valid   { background: #10b981; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); }
+.v-result--dup     { background: #f59e0b; box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4); }
+.v-result--invalid { background: #ef4444; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4); }
+
+.v-result__icon  { font-size: 3.5rem; color: #fff; margin-bottom: 1rem; text-align: center; width: 100%; }
+.v-result__title { 
+  font-size: 1.75rem; 
+  font-weight: 800; 
+  color: #fff; 
+  margin-bottom: 1.5rem; 
+  padding-bottom: 1rem; 
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  text-align: center;
+}
 
 .v-result-grid {
   display: grid;
@@ -345,20 +380,36 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   background: #ffffff;
   border: 1px solid #dee2e6;
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 0.6rem;
   transition: all 0.2s ease;
+  overflow: hidden;
+  max-width: 100%;
 }
 .v-activity-item:hover {
   transform: translateX(4px);
   border-color: #adb5bd;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
-.v-activity-name  { font-size: 0.95rem; font-weight: 700; color: #1a1a1a; }
-.v-activity-meta  { font-size: 0.75rem; color: #6c757d; margin-top: 0.1rem; font-weight: 500; }
+.v-activity-name  { 
+  font-size: 0.95rem; 
+  font-weight: 700; 
+  color: #1a1a1a; 
+  word-break: break-word;
+  display: block;
+}
+.v-activity-meta  { 
+  font-size: 0.75rem; 
+  color: #6c757d; 
+  margin-top: 0.25rem; 
+  font-weight: 500; 
+  word-break: break-all;
+  line-height: 1.4;
+}
 .v-activity-badge {
   font-size: 0.65rem;
   font-weight: 800;
@@ -366,9 +417,9 @@
   padding: 4px 10px;
   border-radius: 6px;
 }
-.v-activity-badge--valid   { background: #e9ecef; color: #1a1a1a; border: 1px solid #dee2e6; }
-.v-activity-badge--dup     { background: #f8f9fa; color: #6c757d; border: 1px solid #f1f3f5; }
-.v-activity-badge--invalid { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+.v-activity-badge--valid   { background: #ecfdf5; color: #065f46; border: 1px solid #d1fae5; }
+.v-activity-badge--dup     { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
+.v-activity-badge--invalid { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
 
 /* QR reader resets */
 #reader { border: none !important; width: 100% !important; }

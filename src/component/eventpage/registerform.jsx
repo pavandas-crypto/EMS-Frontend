@@ -5,36 +5,62 @@ import api from "../../api/api";
 function RegisterForm() {
   const { eventId: urlEventId } = useParams();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    event: urlEventId || "",
-  });
-  const [events, setEvents] = useState([]);
+  const [eventDetails, setEventDetails] = useState(null);
+  const [registrationFields, setRegistrationFields] = useState([]);
+  const [formData, setFormData] = useState({});
   const [status, setStatus] = useState({ type: "", message: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^[0-9]{8,15}$/;
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchEventDetails = async () => {
+      if (!urlEventId) {
+        setStatus({ type: "error", message: "No event selected. Please choose an event from the listings." });
+        setPageLoading(false);
+        return;
+      }
+
       try {
-        const response = await api.getEvents(1, 100);
+        setPageLoading(true);
+        const response = await api.getEvent(urlEventId);
         if (response.success) {
-          setEvents(response.data);
+          const event = response.data;
+          setEventDetails(event);
+          
+          const fields = event.registration_fields || [
+            { id: "participant_name", label: "Full Name", type: "text", required: true },
+            { id: "email", label: "Email Address", type: "email", required: true },
+            { id: "mobile_number", label: "Phone Number", type: "tel", required: true }
+          ];
+          
+          setRegistrationFields(fields);
+          
+          // Initialize form data
+          const initialData = {};
+          fields.forEach(f => {
+            initialData[f.id] = "";
+          });
+          setFormData(initialData);
+        } else {
+          setStatus({ type: "error", message: "Event not found." });
         }
       } catch (error) {
-        console.error("Error fetching events:", error);
+        console.error("Error fetching event details:", error);
+        setStatus({ type: "error", message: "Failed to load event details." });
+      } finally {
+        setPageLoading(false);
       }
     };
-    fetchEvents();
-  }, []);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
+    fetchEventDetails();
+  }, [urlEventId]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setStatus({ type: "", message: "" });
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -44,12 +70,18 @@ function RegisterForm() {
     event.preventDefault();
     const nextErrors = {};
 
-    if (!formData.name.trim()) nextErrors.name = "Full name is required.";
-    if (!formData.email.trim()) nextErrors.email = "Email address is required.";
-    else if (!emailRegex.test(formData.email)) nextErrors.email = "Enter a valid email address.";
-    if (!formData.phone.trim()) nextErrors.phone = "Phone number is required.";
-    else if (!phoneRegex.test(formData.phone)) nextErrors.phone = "Enter a valid numeric phone number.";
-    if (!formData.event) nextErrors.event = "Please select the event you want to join.";
+    registrationFields.forEach(field => {
+      const val = String(formData[field.id] || "").trim();
+      if (field.required && !val) {
+        nextErrors[field.id] = `${field.label} is required.`;
+      } else if (val) {
+        if (field.type === "email" && !emailRegex.test(val)) {
+          nextErrors[field.id] = "Enter a valid email address.";
+        } else if (field.type === "tel" && !phoneRegex.test(val)) {
+          nextErrors[field.id] = "Enter a valid numeric phone number.";
+        }
+      }
+    });
 
     setErrors(nextErrors);
 
@@ -60,17 +92,23 @@ function RegisterForm() {
 
     setLoading(true);
     try {
-      const response = await api.registerForEvent({
-        event_id: formData.event,
-        participant_name: formData.name,
-        participant_email: formData.email,
-        participant_phone: formData.phone,
-      });
+      // Map fields to API expectations
+      const payload = {
+        event_id: urlEventId,
+        participant_name: formData.participant_name || formData.Full_Name || formData.name,
+        participant_email: formData.email || formData.Email_Address || formData.participant_email,
+        participant_phone: formData.mobile_number || formData.Phone_Number || formData.phone,
+        organization: formData.company_name || formData.organization,
+        designation: formData.designation,
+        tssia_membership_id: formData.membership_number || formData.tssia_membership_id,
+        form_data: formData 
+      };
+
+      const response = await api.registerForEvent(payload);
 
       if (response.success) {
         setStatus({ type: "success", message: "Registration successful! You will receive your ticket via email." });
-        // Optionally redirect or show success screen
-        setTimeout(() => navigate(`/event/${formData.event}`), 3000);
+        setTimeout(() => navigate(`/event/${urlEventId}`), 3000);
       }
     } catch (error) {
       setStatus({ type: "error", message: error.message || "Registration failed. Please try again." });
@@ -79,13 +117,29 @@ function RegisterForm() {
     }
   };
 
+  if (pageLoading) {
+    return (
+      <div className="page-shell auth-shell">
+        <div className="panel card" style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "4rem" }}>
+          <div className="loading-spinner"></div>
+          <p style={{ marginTop: "1rem", color: "#6b7280" }}>Loading event details...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-shell auth-shell">
       <div className="panel card" style={{ maxWidth: "640px", margin: "0 auto" }}>
         <div className="card-header panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p className="panel-label">Event registration</p>
-            <h1 className="page-title">Register for an event</h1>
+            <h1 className="page-title">{eventDetails?.event_name || "Register for Event"}</h1>
+            {eventDetails && (
+              <p style={{ fontSize: "14px", color: "#6b7280", marginTop: "4px" }}>
+                {new Date(eventDetails.start_date_time).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              </p>
+            )}
           </div>
           <button 
             onClick={() => navigate(-1)} 
@@ -101,99 +155,91 @@ function RegisterForm() {
         </div>
 
         <div className="card-body">
-          <p className="panel-copy">Complete the form below to validate participant details and event selection.</p>
+          <p className="panel-copy" style={{ marginBottom: "2rem" }}>
+            Complete the form below to register for this event. All fields marked with <span style={{ color: '#ef4444' }}>*</span> are required.
+          </p>
 
           {status.message && (
-            <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`}>
+            <div className={`alert ${status.type === "success" ? "alert-success" : "alert-error"}`} style={{ marginBottom: "2rem" }}>
               {status.message}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="name" className="form-label">
-                Full name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                value={formData.name}
-                onChange={handleChange}
-                className={`input-field ${errors.name ? "input-error" : ""}`}
-                placeholder="Jane Doe"
-              />
-              {errors.name && <div className="field-error">{errors.name}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="email" className="form-label">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`input-field ${errors.email ? "input-error" : ""}`}
-                placeholder="name@example.com"
-              />
-              {errors.email && <div className="field-error">{errors.email}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="phone" className="form-label">
-                Phone number
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={handleChange}
-                className={`input-field ${errors.phone ? "input-error" : ""}`}
-                placeholder="9840xxxxxx"
-              />
-              {errors.phone && <div className="field-error">{errors.phone}</div>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="event" className="form-label">
-                Select event
-              </label>
-              <select
-                id="event"
-                name="event"
-                value={formData.event}
-                onChange={handleChange}
-                className={`select-field ${errors.event ? "input-error" : ""}`}
-              >
-                <option value="">Choose an event</option>
-                {events.map(ev => (
-                  <option key={ev.event_id} value={ev.event_id}>
-                    {ev.event_name}
-                  </option>
+          {eventDetails && (
+            <form onSubmit={handleSubmit}>
+              <div className="section-grid columns-2">
+                {registrationFields.map((field) => (
+                  <div className="form-group" key={field.id} style={{ gridColumn: field.type === 'textarea' ? 'span 2' : 'auto' }}>
+                    <label htmlFor={field.id} className="form-label">
+                      {field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
+                    </label>
+                    {field.type === 'textarea' ? (
+                      <textarea
+                        id={field.id}
+                        name={field.id}
+                        value={formData[field.id] || ""}
+                        onChange={handleChange}
+                        className={`textarea-field ${errors[field.id] ? "input-error" : ""}`}
+                        rows="3"
+                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                      />
+                    ) : (
+                      <input
+                        id={field.id}
+                        name={field.id}
+                        type={field.type}
+                        value={formData[field.id] || ""}
+                        onChange={handleChange}
+                        className={`input-field ${errors[field.id] ? "input-error" : ""}`}
+                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                      />
+                    )}
+                    {errors[field.id] && <div className="field-error">{errors[field.id]}</div>}
+                  </div>
                 ))}
-              </select>
-              {errors.event && <div className="field-error">{errors.event}</div>}
+              </div>
+
+              <button 
+                type="submit" 
+                className="button button-primary" 
+                style={{ width: "100%", marginTop: "2rem", height: "48px", fontSize: "16px" }}
+                disabled={loading}
+              >
+                {loading ? "Processing..." : "Complete Registration"}
+              </button>
+            </form>
+          )}
+
+          {!eventDetails && !pageLoading && (
+            <div style={{ textAlign: "center", padding: "2rem" }}>
+              <p style={{ color: "#ef4444", fontWeight: 600 }}>Please select a valid event to continue.</p>
+              <button className="button button-secondary" onClick={() => navigate('/events')} style={{ marginTop: "1rem" }}>
+                View All Events
+              </button>
             </div>
+          )}
 
-            <button 
-              type="submit" 
-              className="button button-primary" 
-              style={{ width: "100%" }}
-              disabled={loading}
-            >
-              {loading ? "Registering..." : "Validate registration"}
-            </button>
-          </form>
-
-          <p className="form-note" style={{ marginTop: "1rem" }}>
-            Only validation behavior is active in this demo. The form is styled to match the EMS design system.
+          <p className="form-note" style={{ marginTop: "2rem", textAlign: "center", fontSize: "12px", color: "#9ca3af" }}>
+            By registering, you agree to our terms and conditions. Your ticket will be generated upon successful registration.
           </p>
         </div>
       </div>
+      
+      <style>{`
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #fbbf24;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

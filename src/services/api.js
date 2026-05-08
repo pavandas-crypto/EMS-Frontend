@@ -34,7 +34,7 @@ export const eventService = {
   getEvent: (id) => api.get(`/events/${id}`),
   createEvent: (eventData) => api.post('/events', eventData),
   updateEvent: (id, eventData) => api.put(`/events/${id}`, eventData),
-  deleteEvent: (id) => api.get(`/events/${id}`), // Note: checking if this should be delete
+  deleteEvent: (id) => api.delete(`/events/${id}`),
 };
 
 export const registrationService = {

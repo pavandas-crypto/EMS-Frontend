@@ -13,8 +13,9 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortColumn, setSortColumn] = useState("event_name");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortColumn, setSortColumn] = useState("start_date_time");
+  const [sortOrder, setSortOrder] = useState("desc");
+  const [filterStatus, setFilterStatus] = useState("All");
   const rowsPerPage = 10;
 
   useEffect(() => {
@@ -42,7 +43,26 @@ function AdminDashboard() {
     fetchDashboardData();
   }, []);
   
-  const sortedEvents = [...events].sort((a, b) => {
+  const filteredEvents = events.filter(event => {
+    if (filterStatus === "All") return true;
+    
+    const now = new Date();
+    const start = new Date(event.start_date_time);
+    const end = new Date(event.end_date_time);
+    
+    let status = "Past";
+    if (now < start) {
+      status = "Upcoming";
+    } else if (now >= start && now <= end) {
+      status = "Active";
+    } else if (start.toDateString() === now.toDateString()) {
+      status = "Active";
+    }
+
+    return filterStatus === status;
+  });
+
+  const sortedEvents = [...filteredEvents].sort((a, b) => {
     let aValue = a[sortColumn];
     let bValue = b[sortColumn];
     
@@ -169,12 +189,28 @@ function AdminDashboard() {
             </svg>
             Recent Events
           </h5>
-          <Link to="/admin/events/create" className="ems-btn-new">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ marginRight: 6, verticalAlign: "middle" }}>
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            New Event
-          </Link>
+          <div className="ems-dashboard-actions">
+            <div className="ems-filter-tabs">
+              {["All", "Active", "Upcoming", "Past"].map((status) => (
+                <button
+                  key={status}
+                  className={`ems-filter-tab ${filterStatus === status ? "active" : ""}`}
+                  onClick={() => {
+                    setFilterStatus(status);
+                    setCurrentPage(1);
+                  }}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+            <Link to="/admin/events/create" className="ems-btn-new">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ marginRight: 6, verticalAlign: "middle" }}>
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              New Event
+            </Link>
+          </div>
         </div>
  
         {loading ? (
@@ -214,8 +250,18 @@ function AdminDashboard() {
                     </tr>
                   ) : (
                     recentEvents.map((event) => {
-                      const isUpcoming = new Date(event.start_date_time) > new Date();
-                      const status = isUpcoming ? "Upcoming" : "Past";
+                      const now = new Date();
+                      const start = new Date(event.start_date_time);
+                      const end = new Date(event.end_date_time);
+                      
+                      let status = "Past";
+                      if (now < start) {
+                        status = "Upcoming";
+                      } else if (now >= start && now <= end) {
+                        status = "Active";
+                      } else if (start.toDateString() === now.toDateString()) {
+                        status = "Active";
+                      }
                       return (
                         <tr key={event.event_id}>
                           <td>
@@ -243,7 +289,7 @@ function AdminDashboard() {
                               <Link to={`/admin/events/edit/${event.event_id}`} className="ems-action-btn" title="Edit event">
                                 <i className="bi bi-pencil"></i>
                               </Link>
-                              <Link to={`/admin/events/${event.event_id}/form`} className="ems-action-btn" title="Preview">
+                              <Link to={`/event/${event.event_id}`} className="ems-action-btn" title="Preview" target="_blank">
                                 <i className="bi bi-eye"></i>
                               </Link>
                               <Link to={`/admin/registrations?event_id=${event.event_id}`} className="ems-action-btn" title="Registrations">
@@ -292,8 +338,13 @@ function AdminDashboard() {
 
       <style>{`
         .ems-table-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05); overflow: hidden; }
-        .ems-table-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #f0f0f0; }
+        .ems-table-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; gap: 16px; }
         .ems-table-title { font-size: 15px; font-weight: 700; color: #1a202c; margin: 0; }
+        .ems-dashboard-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .ems-filter-tabs { display: flex; background: #f3f4f6; padding: 4px; border-radius: 8px; gap: 4px; }
+        .ems-filter-tab { border: none; background: transparent; padding: 6px 16px; font-size: 13px; font-weight: 600; color: #6b7280; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+        .ems-filter-tab:hover { color: #111827; }
+        .ems-filter-tab.active { background: #fff; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .ems-btn-new { display: inline-flex; align-items: center; padding: 7px 14px; background: #2563eb; color: #fff; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background 0.15s; }
         .ems-btn-new:hover { background: #1d4ed8; color: #fff; }
         .ems-table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -308,7 +359,8 @@ function AdminDashboard() {
         .ems-date-secondary { display: block; font-size: 12px; color: #9ca3af; margin-top: 1px; }
         .ems-reg-badge { display: inline-block; min-width: 36px; padding: 3px 10px; background: #eff6ff; color: #2563eb; border-radius: 20px; font-size: 12.5px; font-weight: 700; text-align: center; }
         .ems-status-badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-        .ems-status-upcoming { background: #dcfce7; color: #16a34a; }
+        .ems-status-upcoming { background: #eff6ff; color: #2563eb; }
+        .ems-status-active { background: #dcfce7; color: #16a34a; }
         .ems-status-past { background: #f3f4f6; color: #6b7280; }
         .ems-action-group { display: inline-flex; gap: 4px; }
         .ems-action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; color: #6b7280; background: transparent; border: 1px solid #e5e7eb; text-decoration: none; font-size: 13px; transition: all 0.12s; }

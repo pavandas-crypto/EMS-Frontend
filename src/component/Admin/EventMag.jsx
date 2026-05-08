@@ -158,7 +158,7 @@ function EventMag() {
                 </Card.Body>
                 <Card.Footer className="bg-white border-0 pt-0 d-flex gap-2">
                   <Button size="sm" variant="outline-primary" href={`/admin/events/edit/${event.id}`}>Edit</Button>
-                  <Button size="sm" variant="outline-secondary" href={`/event/${event.id}`}>Preview</Button>
+                  <Button size="sm" variant="outline-secondary" href={`/event/${event.id}`} target="_blank">Preview</Button>
                 </Card.Footer>
               </Card>
             </Col>

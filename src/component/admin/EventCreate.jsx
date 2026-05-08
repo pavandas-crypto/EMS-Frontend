@@ -32,7 +32,15 @@ function EventCreate() {
     role: "Event Organizer",
     image: "",
   });
-  const [registrationFields, setRegistrationFields] = useState([]);
+  const [registrationFields, setRegistrationFields] = useState([
+    { id: "participant_name", label: "Participant Name", type: "text", required: true, order: 1 },
+    { id: "designation", label: "Designation", type: "text", required: false, order: 2 },
+    { id: "company_name", label: "Company Name", type: "text", required: false, order: 3 },
+    { id: "email", label: "Email", type: "email", required: true, order: 4 },
+    { id: "mobile_number", label: "Mobile Number", type: "tel", required: true, order: 5 },
+    { id: "gst_number", label: "GST Number", type: "text", required: false, order: 6 },
+    { id: "membership_number", label: "Membership Number", type: "text", required: false, order: 7 },
+  ]);
   const [successPageConfig, setSuccessPageConfig] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "", eventId: "", landingPageUrl: "" });
   const [errors, setErrors] = useState({});
@@ -57,8 +65,13 @@ function EventCreate() {
         if (!formData.description.trim()) nextErrors.description = "Event description is required.";
         if (!formData.startDate) nextErrors.startDate = "Start date and time are required.";
         if (!formData.endDate) nextErrors.endDate = "End date and time are required.";
-        if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
-          nextErrors.endDate = "End time must be later than start time.";
+        if (formData.startDate && formData.endDate) {
+          const startDT = new Date(`${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`);
+          const endDT = new Date(`${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`);
+          
+          if (endDT <= startDT) {
+            nextErrors.endDate = "End date and time must be later than start date and time.";
+          }
         }
         if (!formData.location.trim()) nextErrors.location = "Event location is required.";
 
@@ -128,6 +141,15 @@ function EventCreate() {
     if (!formData.description.trim()) nextErrors.description = "Event description is required.";
     if (!formData.startDate) nextErrors.startDate = "Start date is required.";
     if (!formData.endDate) nextErrors.endDate = "End date is required.";
+
+    if (formData.startDate && formData.endDate) {
+      const startDT = new Date(`${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`);
+      const endDT = new Date(`${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`);
+      
+      if (endDT <= startDT) {
+        nextErrors.endDate = "End date and time must be later than start date and time.";
+      }
+    }
     if (!formData.location.trim()) nextErrors.location = "Event location is required.";
 
     setErrors(nextErrors);
@@ -611,6 +633,7 @@ function EventCreate() {
             <>
               <p className="panel-copy">Customize the participant registration form fields.</p>
               <RegistrationFormBuilder
+                initialFields={registrationFields}
                 onSave={(fields) => {
                   setRegistrationFields(fields);
                   setStatus({ type: "success", message: "Registration form fields saved successfully!" });

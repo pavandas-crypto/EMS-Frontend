@@ -30,7 +30,15 @@ function EventEdit() {
     role: "Event Organizer",
     image: "",
   });
-  const [registrationFields, setRegistrationFields] = useState([]);
+  const [registrationFields, setRegistrationFields] = useState([
+    { id: "participant_name", label: "Participant Name", type: "text", required: true, order: 1 },
+    { id: "designation", label: "Designation", type: "text", required: false, order: 2 },
+    { id: "company_name", label: "Company Name", type: "text", required: false, order: 3 },
+    { id: "email", label: "Email", type: "email", required: true, order: 4 },
+    { id: "mobile_number", label: "Mobile Number", type: "tel", required: true, order: 5 },
+    { id: "gst_number", label: "GST Number", type: "text", required: false, order: 6 },
+    { id: "membership_number", label: "Membership Number", type: "text", required: false, order: 7 },
+  ]);
   const [successPageConfig, setSuccessPageConfig] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
   const [errors, setErrors] = useState({});
@@ -123,6 +131,16 @@ function EventEdit() {
         if (!formData.description.trim()) nextErrors.description = "Event description is required.";
         if (!formData.startDate) nextErrors.startDate = "Start date is required.";
         if (!formData.endDate) nextErrors.endDate = "End date is required.";
+        
+        if (formData.startDate && formData.endDate) {
+          const startDT = new Date(`${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`);
+          const endDT = new Date(`${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`);
+          
+          if (endDT <= startDT) {
+            nextErrors.endDate = "End date and time must be later than start date and time.";
+          }
+        }
+
         if (!formData.location.trim()) nextErrors.location = "Location is required.";
         setErrors(nextErrors);
         if (Object.keys(nextErrors).length > 0) {
@@ -153,6 +171,31 @@ function EventEdit() {
   };
 
   const handleUpdateEvent = async () => {
+    // Validate before update
+    const nextErrors = {};
+    if (!formData.title.trim()) nextErrors.title = "Event title is required.";
+    if (!formData.description.trim()) nextErrors.description = "Event description is required.";
+    if (!formData.startDate) nextErrors.startDate = "Start date is required.";
+    if (!formData.endDate) nextErrors.endDate = "End date is required.";
+    
+    if (formData.startDate && formData.endDate) {
+      const startDT = new Date(`${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`);
+      const endDT = new Date(`${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`);
+      
+      if (endDT <= startDT) {
+        nextErrors.endDate = "End date and time must be later than start date and time.";
+      }
+    }
+
+    if (!formData.location.trim()) nextErrors.location = "Location is required.";
+    
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setActiveTab("event-details");
+      setStatus({ type: "error", message: "Please fix the validation errors." });
+      return;
+    }
+
     const startDateTime = `${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`;
     const endDateTime = `${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`;
 
@@ -214,55 +257,296 @@ function EventEdit() {
 
           {activeTab === "event-details" && (
             <div className="form-container">
-              <div className="form-group">
-                <label className="form-label">Title</label>
-                <input name="title" value={formData.title} onChange={handleChange} className="input-field" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea name="description" rows="4" value={formData.description} onChange={handleChange} className="textarea-field" />
-              </div>
-              <div className="section-grid columns-2">
+              <p className="panel-copy">Update the basic event information and schedule.</p>
+
+              <form onSubmit={(e) => { e.preventDefault(); }}>
                 <div className="form-group">
-                  <label className="form-label">Start Date</label>
-                  <input name="startDate" type="date" value={formData.startDate} onChange={handleChange} className="input-field" />
+                  <label htmlFor="title" className="form-label">
+                    Event title
+                  </label>
+                  <input
+                    id="title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    className={`input-field ${errors.title ? "input-error" : ""}`}
+                    placeholder="Enter event title"
+                  />
+                  {errors.title && <div className="field-error">{errors.title}</div>}
                 </div>
+
                 <div className="form-group">
-                  <label className="form-label">End Date</label>
-                  <input name="endDate" type="date" value={formData.endDate} onChange={handleChange} className="input-field" />
+                  <label htmlFor="description" className="form-label">
+                    Description
+                  </label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    rows="4"
+                    value={formData.description}
+                    onChange={handleChange}
+                    className={`textarea-field ${errors.description ? "input-error" : ""}`}
+                    placeholder="Describe the event purpose and expected outcomes"
+                  />
+                  {errors.description && <div className="field-error">{errors.description}</div>}
                 </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Location</label>
-                <input name="location" value={formData.location} onChange={handleChange} className="input-field" />
-              </div>
-              <div className="section-grid columns-2">
-                <div className="form-group">
-                  <label className="form-label">Capacity</label>
-                  <input name="capacity" type="number" value={formData.capacity} onChange={handleChange} className="input-field" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Entry Fee (₹)</label>
-                  <input name="entryFee" type="number" value={formData.entryFee} onChange={handleChange} className="input-field" />
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Event Guide / Additional Info</label>
-                <textarea name="additionalInfo" rows="3" value={formData.additionalInfo} onChange={handleChange} className="textarea-field" />
-              </div>
-              <div className="organizer-section" style={{ background: "#f8fafc", padding: "1.5rem", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
-                <h3 style={{ margin: "0 0 1rem", fontSize: "1.1rem" }}>Organizer Information</h3>
+
                 <div className="section-grid columns-2">
-                   <div className="form-group">
-                      <label className="form-label">Name</label>
-                      <input name="name" value={organizer.name} onChange={handleOrganizerChange} className="input-field" />
-                   </div>
-                   <div className="form-group">
-                      <label className="form-label">Phone</label>
-                      <input name="phone" value={organizer.phone} onChange={handleOrganizerChange} className="input-field" />
-                   </div>
+                  <div className="form-group">
+                    <label htmlFor="startDate" className="form-label">
+                      Start date
+                    </label>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        id="startDate"
+                        name="startDate"
+                        type="date"
+                        value={formData.startDate}
+                        onChange={handleChange}
+                        className={`input-field ${errors.startDate ? "input-error" : ""}`}
+                        style={{ flex: 2 }}
+                      />
+                      <input
+                        name="startTime"
+                        type="time"
+                        value={formData.startTime}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ flex: 1 }}
+                      />
+                      <select
+                        name="startPeriod"
+                        value={formData.startPeriod}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ width: "70px" }}
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
+                    {errors.startDate && <div className="field-error">{errors.startDate}</div>}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="endDate" className="form-label">
+                      End date
+                    </label>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        id="endDate"
+                        name="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={handleChange}
+                        className={`input-field ${errors.endDate ? "input-error" : ""}`}
+                        style={{ flex: 2 }}
+                      />
+                      <input
+                        name="endTime"
+                        type="time"
+                        value={formData.endTime}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ flex: 1 }}
+                      />
+                      <select
+                        name="endPeriod"
+                        value={formData.endPeriod}
+                        onChange={handleChange}
+                        className="input-field"
+                        style={{ width: "70px" }}
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
+                    {errors.endDate && <div className="field-error">{errors.endDate}</div>}
+                  </div>
                 </div>
-              </div>
+
+                <div className="form-group">
+                  <label htmlFor="location" className="form-label">
+                    Location
+                  </label>
+                  <input
+                    id="location"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className={`input-field ${errors.location ? "input-error" : ""}`}
+                    placeholder="Enter venue or online link"
+                  />
+                  {errors.location && <div className="field-error">{errors.location}</div>}
+                </div>
+
+                <div className="section-grid columns-2">
+                  <div className="form-group">
+                    <label htmlFor="category" className="form-label">
+                      Event Category
+                    </label>
+                    <select
+                      id="category"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="input-field"
+                    >
+                      <option value="EVENT">Event</option>
+                      <option value="CONFERENCE">Conference</option>
+                      <option value="WORKSHOP">Workshop</option>
+                      <option value="WEBINAR">Webinar</option>
+                      <option value="MEETUP">Meetup</option>
+                      <option value="GALA">Gala</option>
+                      <option value="TRAINING">Training</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="eventFor" className="form-label">
+                      Event For
+                    </label>
+                    <select
+                      id="eventFor"
+                      name="eventFor"
+                      value={formData.eventFor}
+                      onChange={handleChange}
+                      className="input-field"
+                    >
+                      <option value="all">Everyone</option>
+                      <option value="tssia_members">TSSIA Members</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="capacity" className="form-label">
+                      Capacity (Optional)
+                    </label>
+                    <input
+                      id="capacity"
+                      name="capacity"
+                      type="number"
+                      value={formData.capacity}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="Maximum number of attendees"
+                      min="1"
+                    />
+                  </div>
+                </div>
+
+                <div className="section-grid columns-2">
+                  <div className="form-group">
+                    <label htmlFor="entryFee" className="form-label">
+                      Entry Fee (Optional)
+                    </label>
+                    <input
+                      id="entryFee"
+                      name="entryFee"
+                      type="number"
+                      value={formData.entryFee}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="additionalInfo" className="form-label">
+                    Additional Information (Optional)
+                  </label>
+                  <textarea
+                    id="additionalInfo"
+                    name="additionalInfo"
+                    rows="3"
+                    value={formData.additionalInfo}
+                    onChange={handleChange}
+                    className="textarea-field"
+                    placeholder="Any additional details about the event..."
+                  />
+                </div>
+
+                {/* Organizer Section */}
+                <div style={{
+                  padding: "1.5rem",
+                  background: "#f9fafb",
+                  borderRadius: "8px",
+                  marginTop: "2rem",
+                  marginBottom: "1rem",
+                  border: "1px solid #e5e7eb"
+                }}>
+                  <h3 style={{
+                    fontSize: "1.1rem",
+                    fontWeight: "700",
+                    marginBottom: "1rem",
+                    color: "#111827"
+                  }}>Organizer Information (Optional)</h3>
+
+                  <div className="section-grid columns-2">
+                    <div className="form-group">
+                      <label htmlFor="organizer-name" className="form-label">
+                        Organizer Name
+                      </label>
+                      <input
+                        id="organizer-name"
+                        name="name"
+                        value={organizer.name}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="Your name or organization"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="organizer-role" className="form-label">
+                        Role/Title
+                      </label>
+                      <input
+                        id="organizer-role"
+                        name="role"
+                        value={organizer.role}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="e.g., Event Manager"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="section-grid columns-2">
+                    <div className="form-group">
+                      <label htmlFor="organizer-email" className="form-label">
+                        Email
+                      </label>
+                      <input
+                        id="organizer-email"
+                        name="email"
+                        type="email"
+                        value={organizer.email}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="contact@example.com"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="organizer-phone" className="form-label">
+                        Phone
+                      </label>
+                      <input
+                        id="organizer-phone"
+                        name="phone"
+                        value={organizer.phone}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                        placeholder="+1 (555) 000-0000"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </form>
             </div>
           )}
 
@@ -281,9 +565,15 @@ function EventEdit() {
         </div>
 
         <div className="ec-footer">
-          <button className="button button-secondary" onClick={handlePrevious} disabled={currentStepIndex === 0}>Previous</button>
+          {currentStepIndex > 0 && (
+            <button className="button button-secondary" onClick={handlePrevious}>Previous</button>
+          )}
+          {! (currentStepIndex > 0) && <div></div>}
           <span>Step {currentStepIndex + 1} of 3</span>
-          <button className="button button-primary" onClick={handleNext} disabled={currentStepIndex === 2}>Next</button>
+          {currentStepIndex < steps.length - 1 && (
+            <button className="button button-primary" onClick={handleNext}>Next</button>
+          )}
+          {! (currentStepIndex < steps.length - 1) && <div></div>}
         </div>
       </div>
       <style>{`

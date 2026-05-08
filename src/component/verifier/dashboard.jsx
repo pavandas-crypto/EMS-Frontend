@@ -54,7 +54,16 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
     } catch (error) {
       console.error("Scan error:", error);
       setUserStatus('invalid');
+      const errorMsg = error.message || 'Invalid Code';
       setUserDetails(null);
+      setScanResult(code); // Ensure code is shown even if invalid
+      setActivity(prev => [{
+        id: Date.now(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        code,
+        status: 'invalid',
+        name: errorMsg,
+      }, ...prev].slice(0, 20));
       playBeep(400, 500);
     }
   };
@@ -138,47 +147,52 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
             </form>
 
             {scanResult && (
-              <div className={`v-result ${statusClass}`}>
-                <i className={`fas ${statusIcon} v-result__icon`}></i>
-                <div className="v-result__title">{statusLabel}</div>
+              <div className="v-result-overlay" onClick={clearResult}>
+                <div className={`v-result ${statusClass}`} onClick={e => e.stopPropagation()}>
+                  <i className={`fas ${statusIcon} v-result__icon`}></i>
+                  <div className="v-result__title">{statusLabel}</div>
 
-                {userDetails ? (
-                  <div className="v-result-grid">
-                    <div className="v-result-cell v-result-cell--full">
-                      <span className="v-result-cell__label">Name</span>
-                      <span className="v-result-cell__value">{userDetails.name}</span>
+                  {userDetails ? (
+                    <div className="v-result-grid">
+                      <div className="v-result-cell v-result-cell--full">
+                        <span className="v-result-cell__label">Name</span>
+                        <span className="v-result-cell__value">{userDetails.name}</span>
+                      </div>
+                      <div className="v-result-cell v-result-cell--full">
+                        <span className="v-result-cell__label">Organisation</span>
+                        <span className="v-result-cell__value">{userDetails.organisation}</span>
+                      </div>
+                      <div className="v-result-cell">
+                        <span className="v-result-cell__label">Designation</span>
+                        <span className="v-result-cell__value">{userDetails.designation}</span>
+                      </div>
+                      <div className="v-result-cell">
+                        <span className="v-result-cell__label">Pass No</span>
+                        <span className="v-result-cell__value">{userDetails.passNo}</span>
+                      </div>
+                      <div className="v-result-cell v-result-cell--full">
+                        <span className="v-result-cell__label">Mobile</span>
+                        <span className="v-result-cell__value">{userDetails.mobile}</span>
+                      </div>
+                      <div className="v-result-cell v-result-cell--full">
+                        <span className="v-result-cell__label">Email</span>
+                        <span className="v-result-cell__value">{userDetails.email}</span>
+                      </div>
                     </div>
-                    <div className="v-result-cell v-result-cell--full">
-                      <span className="v-result-cell__label">Organisation</span>
-                      <span className="v-result-cell__value">{userDetails.organisation}</span>
+                  ) : (
+                    <div className="v-result-cell v-result-cell--full" style={{ marginBottom: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.1)' }}>
+                      <span className="v-result-cell__label" style={{ color: 'rgba(255,255,255,0.7)' }}>Message</span>
+                      <span className="v-result-cell__value" style={{ fontSize: '1.2rem' }}>{scanResult}</span>
                     </div>
-                    <div className="v-result-cell">
-                      <span className="v-result-cell__label">Designation</span>
-                      <span className="v-result-cell__value">{userDetails.designation}</span>
-                    </div>
-                    <div className="v-result-cell">
-                      <span className="v-result-cell__label">Pass No</span>
-                      <span className="v-result-cell__value">{userDetails.passNo}</span>
-                    </div>
-                    <div className="v-result-cell v-result-cell--full">
-                      <span className="v-result-cell__label">Mobile</span>
-                      <span className="v-result-cell__value">{userDetails.mobile}</span>
-                    </div>
-                    <div className="v-result-cell v-result-cell--full">
-                      <span className="v-result-cell__label">Email</span>
-                      <span className="v-result-cell__value">{userDetails.email}</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="v-result-cell v-result-cell--full" style={{ marginBottom: '1rem', textAlign: 'center' }}>
-                    <span className="v-result-cell__label">Code scanned</span>
-                    <span className="v-result-cell__value" style={{ fontSize: '1.3rem' }}>{scanResult}</span>
-                  </div>
-                )}
+                  )}
 
-                <button className="v-btn" onClick={clearResult} style={{ marginTop: 'auto' }}>
-                  Scan Next →
-                </button>
+                  <button className="v-btn" onClick={clearResult} style={{ 
+                    marginTop: 'auto', background: '#fff', color: userStatus === 'valid' ? '#10b981' : userStatus === 'duplicate' ? '#f59e0b' : '#ef4444',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                  }}>
+                    Scan Next →
+                  </button>
+                </div>
               </div>
             )}
           </div>
