@@ -511,7 +511,7 @@ export default function Report() {
         .rp-header-left { display: flex; align-items: center; gap: 14px; }
         .rp-header-icon {
           width: 42px; height: 42px; border-radius: 10px;
-          background: #111827; color: #fbbf24;
+          background: #111827; color: #fff;
           border: 1px solid #1f2937;
           display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
@@ -520,11 +520,11 @@ export default function Report() {
         .rp-btn-export {
           display: inline-flex; align-items: center; gap: 7px;
           padding: 9px 18px; border-radius: 8px; border: none;
-          background: #fbbf24; color: #111827;
+          background: #fff; color: #111827;
           font-size: 13px; font-weight: 700; cursor: pointer;
           transition: background 0.12s; white-space: nowrap;
         }
-        .rp-btn-export:hover { background: #f59e0b; }
+        .rp-btn-export:hover { background: #26b40d; }
 
         /* ── Stats ───────────────────────────────────── */
         .rp-stats {
@@ -538,12 +538,12 @@ export default function Report() {
           position: relative;
         }
         .rp-stat-accent {
-          width: 4px; height: 100%; background: #fbbf24;
+          width: 4px; height: 100%; background: #fff;
           position: absolute; left: 0; top: 0; border-radius: 12px 0 0 12px;
         }
         .rp-stat-icon {
           width: 40px; height: 40px; border-radius: 10px;
-          background: #111827; color: #fbbf24;
+          background: #111827; color: #fff;
           display: flex; align-items: center; justify-content: center; flex-shrink: 0;
           margin-left: 14px;
         }
@@ -568,7 +568,7 @@ export default function Report() {
           transition: border-color 0.12s, background 0.12s;
         }
         .rp-search::placeholder { color: #9ca3af; }
-        .rp-search:focus { border-color: #fbbf24; background: #fff; box-shadow: 0 0 0 3px rgba(251,191,36,0.15); }
+        .rp-search:focus { border-color: #fff; background: #fff; box-shadow: 0 0 0 3px rgba(251,191,36,0.15); }
         .rp-search-clear {
           position: absolute; right: 8px; background: none; border: none;
           cursor: pointer; color: #9ca3af; display: flex; padding: 2px; border-radius: 4px;
@@ -580,7 +580,7 @@ export default function Report() {
           background: #f8fafc; color: #9ca3af; min-width: 150px;
           transition: border-color 0.12s;
         }
-        .rp-select-wrap:focus-within { border-color: #fbbf24; box-shadow: 0 0 0 3px rgba(251,191,36,0.15); }
+        .rp-select-wrap:focus-within { border-color: #fff; box-shadow: 0 0 0 3px rgba(251,191,36,0.15); }
         .rp-select {
           border: none; background: transparent; outline: none;
           font-size: 13px; color: #374151; font-weight: 500; width: 100%; cursor: pointer;
@@ -597,7 +597,7 @@ export default function Report() {
           cursor: pointer; transition: all 0.12s; white-space: nowrap;
         }
         .rp-tab:hover { background: #f9fafb; color: #111827; }
-        .rp-tab--active { background: #111827; color: #fbbf24; border-color: #111827; }
+        .rp-tab--active { background: #111827; color: #fff; border-color: #111827; }
         .rp-tabs-meta { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .rp-meta-txt { font-size: 12px; color: #9ca3af; }
         .rp-page-size { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #9ca3af; }
@@ -605,8 +605,8 @@ export default function Report() {
           padding: 3px 9px; border-radius: 5px; border: 1px solid #e2e8f0;
           background: #fff; font-size: 12px; font-weight: 600; color: #6b7280; cursor: pointer; transition: all 0.1s;
         }
-        .rp-size-btn:hover { border-color: #fbbf24; color: #111827; }
-        .rp-size-btn--active { background: #111827; border-color: #111827; color: #fbbf24; }
+        .rp-size-btn:hover { border-color: #fff; color: #111827; }
+        .rp-size-btn--active { background: #111827; border-color: #111827; color: #fff; }
 
         /* ── Card + Table ────────────────────────────── */
         .rp-card { background: #fff; border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden; }
@@ -616,7 +616,7 @@ export default function Report() {
         .rp-table th {
           padding: 11px 16px; font-size: 11px; font-weight: 700;
           text-transform: uppercase; letter-spacing: 0.06em;
-          color: #fbbf24; white-space: nowrap; text-align: left;
+          color: #fff; white-space: nowrap; text-align: left;
         }
         .rp-th-sort { cursor: pointer; user-select: none; }
         .rp-th-sort:hover { color: #fff; }
@@ -637,7 +637,7 @@ export default function Report() {
         .rp-person { display: flex; align-items: center; gap: 10px; }
         .rp-avatar {
           width: 34px; height: 34px; border-radius: 8px;
-          background: #111827; color: #fbbf24; flex-shrink: 0;
+          background: #111827; color: #fff; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
           font-size: 11.5px; font-weight: 700;
         }
@@ -662,7 +662,7 @@ export default function Report() {
           display: inline-flex; align-items: center; gap: 4px;
           padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 700; white-space: nowrap;
         }
-        .rp-badge--member    { background: #111827; color: #fbbf24; }
+        .rp-badge--member    { background: #111827; color: #fff; }
         .rp-badge--non       { background: #f1f5f9; color: #6b7280; border: 1px solid #e2e8f0; }
         .rp-badge--attended  { background: #fefce8; color: #854d0e; border: 1px solid #fde04Yellow; }
         .rp-badge--approved  { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
@@ -682,7 +682,7 @@ export default function Report() {
         .rp-company-cell { display: flex; align-items: center; gap: 10px; }
         .rp-company-dot {
           width: 8px; height: 8px; border-radius: 50%;
-          background: #fbbf24; flex-shrink: 0;
+          background: #fff; flex-shrink: 0;
         }
 
         /* Attendance rate bar */
@@ -690,7 +690,7 @@ export default function Report() {
         .rp-rate-bar {
           width: 80px; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden;
         }
-        .rp-rate-fill { height: 100%; background: #fbbf24; border-radius: 99px; transition: width 0.3s; }
+        .rp-rate-fill { height: 100%; background: #fff; border-radius: 99px; transition: width 0.3s; }
         .rp-rate-txt { font-size: 12px; font-weight: 700; color: #374151; min-width: 32px; }
 
         /* Pagination */
@@ -707,14 +707,14 @@ export default function Report() {
           cursor: pointer; transition: all 0.1s; white-space: nowrap;
         }
         .rp-pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-        .rp-pg-btn:not(:disabled):hover { background: #fefce8; border-color: #fbbf24; color: #111827; }
+        .rp-pg-btn:not(:disabled):hover { background: #fefce8; border-color: #fff; color: #111827; }
         .rp-pg-pill {
           width: 30px; height: 30px; border-radius: 6px; border: 1px solid #e2e8f0;
           background: #fff; font-size: 12px; font-weight: 600; color: #374151;
           cursor: pointer; transition: all 0.1s; display: flex; align-items: center; justify-content: center;
         }
-        .rp-pg-pill:hover { background: #fefce8; border-color: #fbbf24; }
-        .rp-pg-pill--active { background: #111827; border-color: #111827; color: #fbbf24; }
+        .rp-pg-pill:hover { background: #fefce8; border-color: #fff; }
+        .rp-pg-pill--active { background: #111827; border-color: #111827; color: #fff; }
         .rp-pg-ellipsis { width: 24px; text-align: center; font-size: 12px; color: #9ca3af; }
 
         /* Empty */

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import RegistrationFormBuilder from "./RegistrationFormBuilder";
 import SuccessPageBuilder from "./SuccessPageBuilder";
 import api from "../../api/api";
+import { useNavigate } from "react-router-dom";
 
 // Utility function to generate unique event ID
 const generateEventId = () => {
@@ -9,6 +10,7 @@ const generateEventId = () => {
 };
 
 function EventCreate() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -46,6 +48,7 @@ function EventCreate() {
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("event-details");
   const [createdEventId, setCreatedEventId] = useState(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const steps = [
     { id: "event-details", label: "Event Details" },
@@ -212,9 +215,10 @@ function EventCreate() {
         const landingPageUrl = `/event/${eventId}`;
         
         setCreatedEventId(eventId);
+        setShowSuccessPopup(true);
         setStatus({
           type: "success",
-          message: `Event "${formData.title}" created successfully in database! 🎉`,
+          message: `Event "${formData.title}" created successfully! 🎉`,
           eventId: eventId,
           landingPageUrl: landingPageUrl,
         });
@@ -266,11 +270,22 @@ function EventCreate() {
   return (
     <div className="page-shell">
       <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div className="card-header panel-header">
+        <div className="card-header panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p className="panel-label">Event builder</p>
             <h1 className="page-title">Create new event</h1>
           </div>
+          <button 
+            onClick={() => navigate("/admin/dashboard")} 
+            className="button button-text"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#666', fontWeight: 600 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Back to Dashboard
+          </button>
         </div>
 
         {/* Tabs */}
@@ -764,7 +779,112 @@ function EventCreate() {
         </div>
       </div>
 
+      {showSuccessPopup && (
+        <div className="modal-overlay">
+          <div className="modal-content success-popup">
+            <div className="success-icon-container">
+              <div className="success-icon-bg">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <h2 className="success-title">Event Created!</h2>
+            <p className="success-message">
+              Your event <strong>"{formData.title}"</strong> has been successfully created and is now live.
+            </p>
+
+            <div className="success-actions-vertical">
+              <button 
+                className="button button-primary" 
+                onClick={handlePreviewLandingPage}
+                style={{ width: '100%', marginBottom: '1rem' }}
+              >
+                View Landing Page
+              </button>
+              <button 
+                className="button button-secondary" 
+                onClick={() => {
+                  setShowSuccessPopup(false);
+                  handleCreateAnother();
+                }}
+                style={{ width: '100%' }}
+              >
+                Create Another Event
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .success-popup {
+          background: white;
+          border-radius: 16px;
+          max-width: 450px;
+          width: 100%;
+          padding: 2.5rem;
+          text-align: center;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          animation: scaleUp 0.3s ease-out;
+        }
+
+        @keyframes scaleUp {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+
+        .success-icon-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .success-icon-bg {
+          background: #fbbf24;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .success-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: #111827;
+          margin-bottom: 0.75rem;
+        }
+
+        .success-message {
+          color: #6b7280;
+          line-height: 1.6;
+          margin-bottom: 2rem;
+        }
+
+        .success-actions-vertical {
+          display: flex;
+          flex-direction: column;
+        }
+
         .ec-tabs {
           display: flex;
           gap: 8px;

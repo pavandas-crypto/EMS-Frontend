@@ -12,6 +12,7 @@ function RegisterForm() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^[0-9]{8,15}$/;
@@ -107,8 +108,8 @@ function RegisterForm() {
       const response = await api.registerForEvent(payload);
 
       if (response.success) {
-        setStatus({ type: "success", message: "Registration successful! You will receive your ticket via email." });
-        setTimeout(() => navigate(`/event/${urlEventId}`), 3000);
+        setStatus({ type: "success", message: "Registration successful!" });
+        setShowSuccessPopup(true);
       }
     } catch (error) {
       setStatus({ type: "error", message: error.message || "Registration failed. Please try again." });
@@ -225,6 +226,62 @@ function RegisterForm() {
         </div>
       </div>
       
+      {showSuccessPopup && (
+        <div className="modal-overlay">
+          <div className="modal-content success-popup">
+            <div className="success-icon-container">
+              <div className="success-icon-bg">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <h2 className="success-title">
+              {eventDetails?.success_page_config?.title || "Registration Successful!"}
+            </h2>
+            <p className="success-message">
+              {eventDetails?.success_page_config?.message || "Thank you for registering for our event. We look forward to seeing you there!"}
+            </p>
+
+            {eventDetails?.success_page_config?.displayFields?.length > 0 && (
+              <div className="success-details-box">
+                <h4 className="details-header">Registration Details</h4>
+                <div className="details-grid">
+                  {eventDetails.success_page_config.displayFields.map(fieldKey => {
+                    // Try to find the field label and value
+                    const fieldDef = registrationFields.find(f => f.id === fieldKey) || 
+                                     registrationFields.find(f => f.id.toLowerCase() === fieldKey.replace('_', '').toLowerCase());
+                    
+                    const label = fieldDef?.label || fieldKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    const value = formData[fieldKey] || formData[fieldDef?.id] || "N/A";
+
+                    if (!value || value === "N/A") return null;
+
+                    return (
+                      <div key={fieldKey} className="detail-item">
+                        <span className="detail-label">{label}:</span>
+                        <span className="detail-value">{value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="success-actions">
+              <button 
+                className="button button-primary" 
+                style={{ width: '100%' }}
+                onClick={() => navigate(`/event/${urlEventId}`)}
+              >
+                Back to Event
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .loading-spinner {
           width: 40px;
@@ -238,6 +295,113 @@ function RegisterForm() {
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .success-popup {
+          background: white;
+          border-radius: 16px;
+          max-width: 500px;
+          width: 100%;
+          padding: 2.5rem;
+          text-align: center;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          animation: scaleUp 0.3s ease-out;
+        }
+
+        @keyframes scaleUp {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+
+        .success-icon-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .success-icon-bg {
+          background: #10b981;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .success-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: #111827;
+          margin-bottom: 0.75rem;
+        }
+
+        .success-message {
+          color: #6b7280;
+          line-height: 1.6;
+          margin-bottom: 2rem;
+        }
+
+        .success-details-box {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 1.25rem;
+          margin-bottom: 2rem;
+          text-align: left;
+        }
+
+        .details-header {
+          font-size: 14px;
+          font-weight: 700;
+          text-transform: uppercase;
+          color: #9ca3af;
+          letter-spacing: 0.05em;
+          margin-bottom: 1rem;
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 0.5rem;
+        }
+
+        .details-grid {
+          display: grid;
+          gap: 0.75rem;
+        }
+
+        .detail-item {
+          display: flex;
+          justify-content: space-between;
+          font-size: 14px;
+        }
+
+        .detail-label {
+          color: #6b7280;
+          font-weight: 500;
+        }
+
+        .detail-value {
+          color: #111827;
+          font-weight: 600;
+        }
+
+        .success-actions {
+          display: flex;
+          gap: 1rem;
         }
       `}</style>
     </div>

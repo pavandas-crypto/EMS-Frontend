@@ -5,7 +5,7 @@ function AdminLayout() {
     <div className="admin-shell">
       <aside className="admin-sidebar sticky-sidebar">
         <div className="brand">
-          <div className="brand-icon">E</div>
+          <div className="brand-icon">EMS</div>
           <div>
             <div style={{ fontWeight: 700 }}>EMS Admin</div>
             <p className="form-note">Design system dashboard</p>

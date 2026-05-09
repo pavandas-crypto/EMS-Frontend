@@ -44,6 +44,7 @@ function EventEdit() {
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState("event-details");
   const [loading, setLoading] = useState(true);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -220,7 +221,7 @@ function EventEdit() {
       const response = await api.updateEvent(eventId, eventPayload);
       if (response.success) {
         setStatus({ type: "success", message: "Event updated successfully! 🎉" });
-        setTimeout(() => navigate("/admin/dashboard"), 1500);
+        setShowSuccessPopup(true);
       }
     } catch (error) {
       setStatus({ type: "error", message: error.message || "Update failed." });
@@ -232,8 +233,22 @@ function EventEdit() {
   return (
     <div className="page-shell">
       <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
-        <div className="card-header panel-header">
-           <h1 className="page-title">Edit Event</h1>
+        <div className="card-header panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p className="panel-label">Event editor</p>
+            <h1 className="page-title">Edit Event</h1>
+          </div>
+          <button 
+            onClick={() => navigate("/admin/dashboard")} 
+            className="button button-text"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#666', fontWeight: 600 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12"/>
+              <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            Back to Dashboard
+          </button>
         </div>
 
         <div className="ec-tabs">
@@ -576,7 +591,109 @@ function EventEdit() {
           {! (currentStepIndex < steps.length - 1) && <div></div>}
         </div>
       </div>
+      {showSuccessPopup && (
+        <div className="modal-overlay">
+          <div className="modal-content success-popup">
+            <div className="success-icon-container">
+              <div className="success-icon-bg">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <h2 className="success-title">Event Updated!</h2>
+            <p className="success-message">
+              Changes to <strong>"{formData.title}"</strong> have been saved successfully.
+            </p>
+
+            <div className="success-actions-vertical">
+              <button 
+                className="button button-primary" 
+                onClick={() => window.open(`/event/${eventId}`, '_blank')}
+                style={{ width: '100%', marginBottom: '1rem' }}
+              >
+                View Landing Page
+              </button>
+              <button 
+                className="button button-secondary" 
+                onClick={() => navigate("/admin/dashboard")}
+                style={{ width: '100%' }}
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .success-popup {
+          background: white;
+          border-radius: 16px;
+          max-width: 450px;
+          width: 100%;
+          padding: 2.5rem;
+          text-align: center;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+          animation: scaleUp 0.3s ease-out;
+        }
+
+        @keyframes scaleUp {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+
+        .success-icon-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 1.5rem;
+        }
+
+        .success-icon-bg {
+          background: #fbbf24;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+        }
+
+        .success-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: #111827;
+          margin-bottom: 0.75rem;
+        }
+
+        .success-message {
+          color: #6b7280;
+          line-height: 1.6;
+          margin-bottom: 2rem;
+        }
+
+        .success-actions-vertical {
+          display: flex;
+          flex-direction: column;
+        }
+
         .ec-tabs { display: flex; gap: 8px; padding: 0 20px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
         .ec-tab { padding: 12px 20px; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #6b7280; border-bottom: 3px solid transparent; transition: 0.2s; }
         .ec-tab--active { color: #111827; border-bottom-color: #fbbf24; }
