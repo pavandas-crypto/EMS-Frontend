@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/api";
 
 function AdminDashboard() {
@@ -18,6 +18,8 @@ function AdminDashboard() {
   const [filterStatus, setFilterStatus] = useState("All");
   const rowsPerPage = 10;
 
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -29,11 +31,19 @@ function AdminDashboard() {
         }
 
         // Fetch events
-        const eventsResponse = await api.getEvents(1, 50); 
+        const eventsResponse = await api.getEvents(1, 50);
         if (eventsResponse.success) {
           setEvents(eventsResponse.data);
         }
       } catch (error) {
+        const msg = error.message || '';
+        if (msg.includes('Insufficient permissions') || msg.includes('No token') || msg.includes('Invalid or expired')) {
+          // Session expired or wrong role — force re-login
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login');
+          return;
+        }
         console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
@@ -41,7 +51,7 @@ function AdminDashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [navigate]);
   
   const filteredEvents = events.filter(event => {
     if (filterStatus === "All") return true;

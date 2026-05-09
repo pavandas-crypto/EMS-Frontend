@@ -10,13 +10,13 @@ import EventCreate from "./component/Admin/EventCreate.jsx";
 import EventEdit from "./component/Admin/EventEdit.jsx";
 import EventManage from "./component/Admin/EventMag.jsx";
 import Registrations from "./component/Admin/Registrations.jsx";
-import GenerateTickets from "./component/Admin/GenerateTickets.jsx";
+import TicketDesigner from "./component/Admin/TicketDesigner.jsx";
 import Verifiers from "./component/Admin/Verifiers.jsx";
 import Report from "./component/Admin/Report.jsx";
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/event/:eventId" element={<EventLandingPage />} />
@@ -31,7 +31,7 @@ function App() {
           <Route path="events/manage" element={<EventManage />} />
           <Route path="events/edit/:eventId" element={<EventEdit />} />
           <Route path="registrations" element={<Registrations />} />
-          <Route path="tickets" element={<GenerateTickets />} />
+          <Route path="tickets" element={<TicketDesigner />} />
           <Route path="verifiers" element={<Verifiers />} />
           <Route path="reports" element={<Report />} />
         </Route>

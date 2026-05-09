@@ -367,9 +367,18 @@ export default function Report() {
                         </span>
                       </td>
                       <td>
-                        {p.verifiedBy
-                          ? <span className="rp-verifier"><I.Shield/>{p.verifiedBy}</span>
-                          : <span className="rp-na">—</span>}
+                        {p.verifiedBy ? (
+                          <div className="rp-verifier-info">
+                            <span className="rp-verifier"><I.Shield/>{p.verifiedBy}</span>
+                            {p.attendedAt && (
+                              <div className="rp-attended-time">
+                                {new Date(p.attendedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="rp-na">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -656,6 +665,8 @@ export default function Report() {
           display: inline-flex; align-items: center; gap: 5px;
           font-size: 12px; color: #374151; font-weight: 500;
         }
+        .rp-verifier-info { display: flex; flex-direction: column; gap: 2px; }
+        .rp-attended-time { font-size: 10.5px; color: #9ca3af; font-weight: 500; padding-left: 18px; }
 
         /* Badges */
         .rp-badge {

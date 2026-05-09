@@ -269,7 +269,7 @@ function EventCreate() {
 
   return (
     <div className="page-shell">
-      <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
+      <div className="card event-create-card">
         <div className="card-header panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p className="panel-label">Event builder</p>

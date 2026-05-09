@@ -8,13 +8,6 @@ const NAV_LINKS = [
   { label: "Events", href: "#events" },
 ];
 
-const STATS = [
-  { value: "12K+", label: "Registered Attendees" },
-  { value: "340+", label: "Events Managed" },
-  { value: "99.8%", label: "Check-in Accuracy" },
-  { value: "50+", label: "Verified Organizers" },
-];
-
 const FEATURES = [
   {
     icon: (
@@ -83,41 +76,25 @@ const STEPS = [
   { num: "04", title: "Verify & Check-in", desc: "Scan QR codes at the door for instant verification. Zero queues, zero friction." },
 ];
 
-function Counter({ target }) {
-  const [count, setCount] = useState(0);
-  const numeric = parseInt(target.replace(/\D/g, ""), 10);
-  const suffix = target.replace(/[\d]/g, "");
-
-  useEffect(() => {
-    let start = 0;
-    const duration = 1800;
-    const step = Math.ceil(numeric / (duration / 16));
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= numeric) { setCount(numeric); clearInterval(timer); }
-      else setCount(start);
-    }, 16);
-    return () => clearInterval(timer);
-  }, [numeric]);
-
-  return <>{count.toLocaleString()}{suffix}</>;
-}
-
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total_events: 0, total_registrations: 0, total_scans: 0, total_users: 0 });
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
 
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
-        const response = await api.getEvents(1, 3);
-        if (response.success) {
-          setEvents(response.data.map(ev => ({
+        const [eventsRes, statsRes] = await Promise.all([
+          api.getEvents(1, 3),
+          api.getStats()
+        ]);
+        if (eventsRes.success) {
+          setEvents(eventsRes.data.map(ev => ({
             id: ev.event_id,
             tag: ev.event_for === "all" ? "Public" : "Members",
             date: new Date(ev.start_date_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
@@ -126,14 +103,17 @@ export default function LandingPage() {
             slots: ev.max_capacity ? ev.max_capacity - (ev.registration_count || 0) : "Open"
           })));
         }
+        if (statsRes.success) {
+          setStats(statsRes.data.summary);
+        }
       } catch (error) {
-        console.error("Error fetching events:", error);
+        console.error("Error fetching landing page data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEvents();
+    fetchData();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -225,12 +205,22 @@ export default function LandingPage() {
       <section className="lp-stats">
         <div className="lp-container">
           <div className="lp-stats__grid">
-            {STATS.map(s => (
-              <div key={s.label} className="lp-stat">
-                <div className="lp-stat__value"><Counter target={s.value} /></div>
-                <div className="lp-stat__label">{s.label}</div>
-              </div>
-            ))}
+            <div className="lp-stat">
+              <div className="lp-stat__value">{stats.total_registrations.toLocaleString()}</div>
+              <div className="lp-stat__label">Registered Attendees</div>
+            </div>
+            <div className="lp-stat">
+              <div className="lp-stat__value">{stats.total_events.toLocaleString()}</div>
+              <div className="lp-stat__label">Events Managed</div>
+            </div>
+            <div className="lp-stat">
+              <div className="lp-stat__value">{stats.total_scans.toLocaleString()}</div>
+              <div className="lp-stat__label">Total Check-ins</div>
+            </div>
+            <div className="lp-stat">
+              <div className="lp-stat__value">{stats.total_users.toLocaleString()}</div>
+              <div className="lp-stat__label">Verified Users</div>
+            </div>
           </div>
         </div>
       </section>

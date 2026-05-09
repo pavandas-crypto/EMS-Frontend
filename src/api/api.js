@@ -91,6 +91,13 @@ export const api = {
   }),
   getScanLogs: (eventId, page = 1, pageSize = 10) => 
     apiCall(`/scans/${eventId}?page=${page}&pageSize=${pageSize}`),
+
+  // Tickets
+  getTicketTemplate: (eventId) => apiCall(`/tickets/templates/${eventId}`),
+  saveTicketTemplate: (templateData) => apiCall('/tickets/templates', {
+    method: 'POST',
+    body: JSON.stringify(templateData),
+  }),
 };
 
 export default api;

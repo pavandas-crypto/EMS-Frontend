@@ -21,6 +21,7 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
   const [userStatus, setUserStatus] = useState('');
   const [userDetails, setUserDetails] = useState(null);
   const [activity, setActivity] = useState([]);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   const processCode = async (code) => {
     try {
@@ -198,7 +199,7 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
           </div>
 
           <div className="v-col-stack">
-            <div className="v-card">
+            <div className="v-card v-desktop-only">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #2c2c2e' }}>
                 <span style={{ fontWeight: 700, color: '#000000ff' }}>Event Info</span>
                 <span className="v-badge v-badge--active">Active</span>
@@ -258,6 +259,56 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
           </div>
         </div>
       </div>
+
+      {/* Floating Info Button for Mobile */}
+      <div className="v-fab" onClick={() => setIsInfoOpen(true)}>
+        <i className="fas fa-info-circle"></i>
+      </div>
+
+      {/* Mobile Info Sheet */}
+      {isInfoOpen && (
+        <div className="v-info-overlay" onClick={() => setIsInfoOpen(false)}>
+          <div className="v-info-sheet" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setIsInfoOpen(false)}
+              style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', fontSize: '1.5rem', color: '#adb5bd', cursor: 'pointer' }}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>Event Info</h2>
+              <span className="v-badge v-badge--active">Active</span>
+            </div>
+
+            <div style={{ marginBottom: '2rem' }}>
+              <div className="v-label">Total Participants</div>
+              <div style={{ fontSize: '3rem', fontWeight: 800, color: '#000', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                {selectedEvent.attendees}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              <div className="v-card__meta" style={{ fontSize: '1.1rem' }}>
+                <i className="fas fa-calendar-alt"></i>
+                {selectedEvent.date}
+              </div>
+              <div className="v-card__meta" style={{ fontSize: '1.1rem' }}>
+                <i className="fas fa-map-marker-alt"></i>
+                {selectedEvent.location}
+              </div>
+              <div className="v-card__meta" style={{ fontSize: '1.1rem' }}>
+                <i className="fas fa-user-check"></i>
+                {activity.length} verified today
+              </div>
+            </div>
+
+            <button className="v-btn" onClick={() => setIsInfoOpen(false)} style={{ marginTop: '2.5rem' }}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

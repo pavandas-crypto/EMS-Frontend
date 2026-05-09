@@ -58,7 +58,14 @@ export default function Login() {
       if (data.success) {
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("user", JSON.stringify(data.data.user));
-        navigate("/admin/dashboard");
+        const role = data.data.user?.role || '';
+        if (role === 'admin') {
+          navigate("/admin/dashboard");
+        } else if (role === 'verifier') {
+          navigate("/verifier");
+        } else {
+          navigate("/");
+        }
       }
     } catch (error) {
       setApiErr(error.message || "Invalid email or password");
