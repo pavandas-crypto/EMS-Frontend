@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const usernameRegex = /^[a-zA-Z0-9_-]{3,}$/;
 
 function EyeIcon({ open }) {
   return open ? (
@@ -25,6 +26,7 @@ export default function Login() {
   const [showPw, setShowPw]   = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiErr, setApiErr]   = useState("");
+  const [isVerifier, setIsVerifier] = useState(true);
 
   const handle = e => {
     const { name, value } = e.target;
@@ -35,8 +37,11 @@ export default function Login() {
 
   const validate = () => {
     const next = {};
-    if (!form.email)                        next.email    = "Email is required.";
-    else if (!emailRegex.test(form.email))  next.email    = "Enter a valid email address.";
+    if (!form.email) {
+      next.email = "Username or email is required.";
+    } else if (!emailRegex.test(form.email) && !usernameRegex.test(form.email)) {
+      next.email = "Enter a valid email address or username (3+ characters).";
+    }
     if (!form.password)                     next.password = "Password is required.";
     else if (form.password.length < 6)      next.password = "Password must be at least 6 characters.";
     setErrors(next);
@@ -56,19 +61,22 @@ export default function Login() {
       });
 
       if (data.success) {
+        // Store token and user data in localStorage
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("user", JSON.stringify(data.data.user));
-        const role = data.data.user?.role || '';
-        if (role === 'admin') {
-          navigate("/admin/dashboard");
-        } else if (role === 'verifier') {
-          navigate("/verifier");
-        } else {
-          navigate("/");
-        }
+        localStorage.setItem("userRole", isVerifier ? "verifier" : "admin");
+        
+        // Create session cookie
+        const expiryDate = new Date();
+        expiryDate.setTime(expiryDate.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
+        const expires = "expires=" + expiryDate.toUTCString();
+        document.cookie = `emsSession=${data.data.token}; ${expires}; path=/`;
+        document.cookie = `emsUserRole=${isVerifier ? "verifier" : "admin"}; ${expires}; path=/`;
+        
+        navigate(isVerifier ? "/verifier" : "/admin/dashboard");
       }
     } catch (error) {
-      setApiErr(error.message || "Invalid email or password");
+      setApiErr(error.message || "Invalid username/email or password");
     } finally {
       setLoading(false);
     }
@@ -78,121 +86,187 @@ export default function Login() {
     <div style={{
       minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
       fontFamily:"Inter,system-ui,sans-serif",
-      background:"linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)",
+      background:"linear-gradient(135deg,#f5f7fa 0%,#f0f2f5 50%,#ebeef3 100%)",
       padding:"2rem"
     }}>
       <div style={{ width:"100%", maxWidth:420 }}>
         <div style={{
-          background:"rgba(255,255,255,0.04)", backdropFilter:"blur(24px)",
-          border:"1px solid rgba(255,255,255,0.1)", borderRadius:24,
-          padding:"2.5rem", boxShadow:"0 32px 80px rgba(0,0,0,0.4)"
+          background:"#fff",
+          border:"1px solid rgba(0,0,0,0.08)", borderRadius:16,
+          padding:"3rem 2.5rem", boxShadow:"0 8px 32px rgba(0,0,0,0.08)",
+          backdropFilter:"blur(10px)"
         }}>
-          {/* Brand mark (mobile) */}
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:"2rem" }}>
+          {/* Brand mark */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:"2.5rem" }}>
             <div style={{
-              width:44, height:44, borderRadius:14,
-              background:"linear-gradient(135deg,#6366f1,#4f46e5)",
+              width:48, height:48, borderRadius:12,
+              background: isVerifier
+                ? "linear-gradient(135deg,#10b981,#059669)"
+                : "linear-gradient(135deg,#3b82f6,#2563eb)",
               display:"flex", alignItems:"center", justifyContent:"center",
-              color:"#fff", fontWeight:800, fontSize:18,
-              boxShadow:"0 8px 24px rgba(99,102,241,0.4)"
+              color:"#fff", fontWeight:700, fontSize:22,
+              boxShadow: isVerifier
+                ? "0 4px 16px rgba(16,185,129,0.3)"
+                : "0 4px 16px rgba(59,130,246,0.3)",
+              transition:"all 0.3s"
             }}>E</div>
             <div>
-              <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>EMS Admin</div>
-              <div style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>Event Management System</div>
+              <div style={{ color:"#1a202c", fontWeight:700, fontSize:16, letterSpacing:"-0.01em" }}>EMS</div>
+              <div style={{ color:"#718096", fontSize:12, fontWeight:500 }}>Event Management</div>
             </div>
           </div>
 
-          <h2 style={{ color:"#fff", fontWeight:800, fontSize:24, margin:"0 0 4px", letterSpacing:"-0.03em" }}>
+          <h2 style={{ color:"#1a202c", fontWeight:700, fontSize:28, margin:"0 0 8px", letterSpacing:"-0.02em" }}>
             Welcome back
           </h2>
-          <p style={{ color:"rgba(255,255,255,0.45)", fontSize:13, margin:"0 0 1.75rem" }}>
-            Sign in to your admin account
+          <p style={{ color:"#718096", fontSize:14, margin:"0 0 2rem", fontWeight:500 }}>
+            Sign in to your {isVerifier ? "verifier" : "admin"} account
           </p>
 
           {apiErr && (
             <div style={{
-              background:"rgba(220,38,38,0.12)", border:"1px solid rgba(220,38,38,0.25)",
-              color:"#fca5a5", borderRadius:10, padding:"10px 14px",
-              fontSize:13, marginBottom:"1.25rem"
+              background:"#fef2f2", border:"1px solid #fecaca",
+              color:"#991b1b", borderRadius:10, padding:"12px 14px",
+              fontSize:13, marginBottom:"1.5rem", fontWeight:500
             }}>{apiErr}</div>
           )}
 
           <form onSubmit={handleSubmit} noValidate>
-            {/* Email */}
-            <div style={{ marginBottom:"1.1rem" }}>
-              <label style={{ display:"block", fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.55)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
-                Email address
+            {/* Email or Username */}
+            <div style={{ marginBottom:"1.25rem" }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#4a5568", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>
+                Username or Email
               </label>
               <input
-                id="admin-email" name="email" type="email"
+                id="user-input" name="email" type="text"
                 value={form.email} onChange={handle}
-                placeholder="admin@example.com" autoComplete="email"
+                placeholder="Enter username or email" autoComplete="username"
                 style={{
-                  width:"100%", padding:"12px 14px", boxSizing:"border-box",
-                  background:"rgba(255,255,255,0.06)", border:`1px solid ${errors.email?"rgba(248,113,113,0.6)":"rgba(255,255,255,0.12)"}`,
-                  borderRadius:12, color:"#fff", fontSize:14, outline:"none",
-                  transition:"border-color 0.2s",
+                  width:"100%", padding:"11px 14px", boxSizing:"border-box",
+                  background:"#f7fafc", border:`1px solid ${errors.email?"#f87171":"#e2e8f0"}`,
+                  borderRadius:10, color:"#1a202c", fontSize:14, outline:"none",
+                  transition:"all 0.2s", fontFamily:"inherit"
                 }}
-                onFocus={e=>{ e.target.style.borderColor="rgba(99,102,241,0.7)"; e.target.style.background="rgba(255,255,255,0.08)"; }}
-                onBlur={e=>{  e.target.style.borderColor=errors.email?"rgba(248,113,113,0.6)":"rgba(255,255,255,0.12)"; e.target.style.background="rgba(255,255,255,0.06)"; }}
+                onFocus={e=>{ 
+                  e.target.style.borderColor=isVerifier?"#10b981":"#3b82f6"; 
+                  e.target.style.background="#fff";
+                  e.target.style.boxShadow=`0 0 0 3px ${isVerifier?"rgba(16,185,129,0.1)":"rgba(59,130,246,0.1)"}`; 
+                }}
+                onBlur={e=>{ 
+                  e.target.style.borderColor=errors.email?"#f87171":"#e2e8f0"; 
+                  e.target.style.background="#f7fafc";
+                  e.target.style.boxShadow="none"; 
+                }}
               />
-              {errors.email && <div style={{ color:"#f87171", fontSize:12, marginTop:5 }}>{errors.email}</div>}
+              {errors.email && <div style={{ color:"#dc2626", fontSize:12, marginTop:6, fontWeight:500 }}>{errors.email}</div>}
             </div>
 
             {/* Password */}
-            <div style={{ marginBottom:"1.5rem" }}>
-              <label style={{ display:"block", fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.55)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
+            <div style={{ marginBottom:"1.75rem" }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:600, color:"#4a5568", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:8 }}>
                 Password
               </label>
               <div style={{ position:"relative" }}>
                 <input
-                  id="admin-password" name="password" type={showPw?"text":"password"}
+                  id="user-password" name="password" type={showPw?"text":"password"}
                   value={form.password} onChange={handle}
-                  placeholder="••••••••" autoComplete="current-password"
+                  placeholder="Enter your password" autoComplete="current-password"
                   style={{
-                    width:"100%", padding:"12px 42px 12px 14px", boxSizing:"border-box",
-                    background:"rgba(255,255,255,0.06)", border:`1px solid ${errors.password?"rgba(248,113,113,0.6)":"rgba(255,255,255,0.12)"}`,
-                    borderRadius:12, color:"#fff", fontSize:14, outline:"none",
-                    transition:"border-color 0.2s",
+                    width:"100%", padding:"11px 42px 11px 14px", boxSizing:"border-box",
+                    background:"#f7fafc", border:`1px solid ${errors.password?"#f87171":"#e2e8f0"}`,
+                    borderRadius:10, color:"#1a202c", fontSize:14, outline:"none",
+                    transition:"all 0.2s", fontFamily:"inherit"
                   }}
-                  onFocus={e=>{ e.target.style.borderColor="rgba(99,102,241,0.7)"; e.target.style.background="rgba(255,255,255,0.08)"; }}
-                  onBlur={e=>{  e.target.style.borderColor=errors.password?"rgba(248,113,113,0.6)":"rgba(255,255,255,0.12)"; e.target.style.background="rgba(255,255,255,0.06)"; }}
+                  onFocus={e=>{ 
+                    e.target.style.borderColor=isVerifier?"#10b981":"#3b82f6"; 
+                    e.target.style.background="#fff";
+                    e.target.style.boxShadow=`0 0 0 3px ${isVerifier?"rgba(16,185,129,0.1)":"rgba(59,130,246,0.1)"}`; 
+                  }}
+                  onBlur={e=>{ 
+                    e.target.style.borderColor=errors.password?"#f87171":"#e2e8f0"; 
+                    e.target.style.background="#f7fafc";
+                    e.target.style.boxShadow="none"; 
+                  }}
                 />
                 <button type="button" onClick={()=>setShowPw(p=>!p)} style={{
-                  position:"absolute", right:12, top:"50%", transform:"translateY(-50%)",
-                  background:"none", border:"none", color:"rgba(255,255,255,0.4)",
-                  cursor:"pointer", display:"flex", alignItems:"center", padding:0
-                }}>
+                  position:"absolute", right:14, top:"50%", transform:"translateY(-50%)",
+                  background:"none", border:"none", color:"#a0aec0",
+                  cursor:"pointer", display:"flex", alignItems:"center", padding:0,
+                  transition:"color 0.2s"
+                }}
+                onMouseEnter={e=>e.target.style.color="#718096"}
+                onMouseLeave={e=>e.target.style.color="#a0aec0"}
+                >
                   <EyeIcon open={showPw}/>
                 </button>
               </div>
-              {errors.password && <div style={{ color:"#f87171", fontSize:12, marginTop:5 }}>{errors.password}</div>}
+              {errors.password && <div style={{ color:"#dc2626", fontSize:12, marginTop:6, fontWeight:500 }}>{errors.password}</div>}
             </div>
 
             <button type="submit" disabled={loading} style={{
-              width:"100%", padding:"13px", borderRadius:12, border:"none",
+              width:"100%", padding:"12px", borderRadius:10, border:"none",
               background: loading
-                ? "rgba(99,102,241,0.5)"
-                : "linear-gradient(135deg,#6366f1,#4f46e5)",
-              color:"#fff", fontWeight:700, fontSize:15, cursor: loading?"not-allowed":"pointer",
-              boxShadow:"0 8px 24px rgba(99,102,241,0.35)",
+                ? isVerifier
+                  ? "rgba(16,185,129,0.6)"
+                  : "rgba(59,130,246,0.6)"
+                : isVerifier
+                  ? "linear-gradient(135deg,#10b981,#059669)"
+                  : "linear-gradient(135deg,#3b82f6,#2563eb)",
+              color:"#fff", fontWeight:600, fontSize:15, cursor: loading?"not-allowed":"pointer",
+              boxShadow: isVerifier
+                ? "0 4px 12px rgba(16,185,129,0.3)"
+                : "0 4px 12px rgba(59,130,246,0.3)",
               transition:"all 0.2s", letterSpacing:"-0.01em"
             }}>
-              {loading ? "Signing in…" : "Sign in to Admin"}
+              {loading ? "Signing in…" : `Sign in to ${isVerifier ? "Verifier" : "Admin"}`}
             </button>
           </form>
 
-          <div style={{ marginTop:"1.5rem", textAlign:"center" }}>
-            <a href="/verifier" style={{
-              color:"rgba(255,255,255,0.35)", fontSize:12,
-              textDecoration:"none", transition:"color 0.2s"
-            }}
-              onMouseEnter={e=>e.target.style.color="rgba(255,255,255,0.7)"}
-              onMouseLeave={e=>e.target.style.color="rgba(255,255,255,0.35)"}
-            >
-              Are you a verifier? Sign in here →
-            </a>
+          <div style={{ marginTop:"2rem", textAlign:"center" }}>
+            {isVerifier ? (
+              <>
+                <span style={{ color:"#a0aec0", fontSize:13 }}>Are you an admin? </span>
+                <button
+                  type="button"
+                  onClick={() => setIsVerifier(false)}
+                  style={{
+                    background:"none", border:"none", color:"#3b82f6",
+                    fontSize:13, fontWeight:600, cursor:"pointer",
+                    textDecoration:"none", transition:"color 0.2s",
+                    padding:0
+                  }}
+                  onMouseEnter={e=>e.target.style.color="#2563eb"}
+                  onMouseLeave={e=>e.target.style.color="#3b82f6"}
+                >
+                  Sign in as Admin →
+                </button>
+              </>
+            ) : (
+              <>
+                <span style={{ color:"#a0aec0", fontSize:13 }}>Are you a verifier? </span>
+                <button
+                  type="button"
+                  onClick={() => setIsVerifier(true)}
+                  style={{
+                    background:"none", border:"none", color:"#10b981",
+                    fontSize:13, fontWeight:600, cursor:"pointer",
+                    textDecoration:"none", transition:"color 0.2s",
+                    padding:0
+                  }}
+                  onMouseEnter={e=>e.target.style.color="#059669"}
+                  onMouseLeave={e=>e.target.style.color="#10b981"}
+                >
+                  Sign in as Verifier →
+                </button>
+              </>
+            )}
           </div>
+        </div>
+
+        <div style={{ marginTop:"2rem", textAlign:"center" }}>
+          <p style={{ color:"#a0aec0", fontSize:12, margin:0 }}>
+            Secure Event Management Platform
+          </p>
         </div>
       </div>
     </div>
