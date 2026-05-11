@@ -13,18 +13,18 @@ import Registrations from "./component/Admin/Registrations.jsx";
 import GenerateTickets from "./component/Admin/GenerateTickets.jsx";
 import Verifiers from "./component/Admin/Verifiers.jsx";
 import Report from "./component/Admin/Report.jsx";
+import { ProtectedVerifierRoute, ProtectedAdminOnlyRoute } from "./utils/ProtectedRoute.jsx";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Login />} />
         <Route path="/event/:eventId" element={<EventLandingPage />} />
         <Route path="/event/:eventId/register" element={<RegisterForm />} />
         <Route path="/register" element={<RegisterForm />} />
-        <Route path="/verifier" element={<VerifierApp />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/verifier" element={<ProtectedVerifierRoute><VerifierApp /></ProtectedVerifierRoute>} />
+        <Route path="/admin" element={<ProtectedAdminOnlyRoute><AdminLayout /></ProtectedAdminOnlyRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="events/create" element={<EventCreate />} />
