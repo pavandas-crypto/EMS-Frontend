@@ -65,6 +65,13 @@ export const api = {
   deleteEvent: (id) => apiCall(`/events/${id}`, {
     method: 'DELETE',
   }),
+  
+  // Draft event management
+  getDraftEvent: () => apiCall('/events/user/draft'),
+  publishDraftEvent: (eventId) => apiCall(`/events/${eventId}/publish`, {
+    method: 'PUT',
+    body: JSON.stringify({ is_draft: false }),
+  }),
 
   // Registrations
   registerForEvent: (registrationData) => apiCall('/registrations', {
@@ -94,10 +101,39 @@ export const api = {
 
   // Tickets
   getTicketTemplate: (eventId) => apiCall(`/tickets/templates/${eventId}`),
+  getTicketTemplatesList: () => apiCall('/tickets/templates'),
   saveTicketTemplate: (templateData) => apiCall('/tickets/templates', {
     method: 'POST',
     body: JSON.stringify(templateData),
   }),
+
+  // Ticket Management
+  getTicket: (ticketId) => apiCall(`/tickets/${ticketId}`),
+  getEventTickets: (eventId, page = 1, pageSize = 10) => 
+    apiCall(`/tickets/event/${eventId}?page=${page}&pageSize=${pageSize}`),
+  getRegistrationTicket: (registrationId) => 
+    apiCall(`/tickets/registration/${registrationId}`),
+  getAllTickets: (page = 1, pageSize = 10) => 
+    apiCall(`/tickets?page=${page}&pageSize=${pageSize}`),
+  markTicketDownloaded: (ticketId) => 
+    apiCall(`/tickets/${ticketId}/downloaded`, { method: 'PATCH' }),
+  markTicketPrinted: (ticketId) => 
+    apiCall(`/tickets/${ticketId}/printed`, { method: 'PATCH' }),
+  updateTicketData: (ticketId, ticketData) => 
+    apiCall(`/tickets/${ticketId}/data`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ticket_data: ticketData }),
+    }),
+  deleteTicket: (ticketId) => 
+    apiCall(`/tickets/${ticketId}`, { method: 'DELETE' }),
+
+  // Images
+  uploadImage: (imageData, fileName, altText = '') => apiCall('/images/upload', {
+    method: 'POST',
+    body: JSON.stringify({ imageData, fileName, altText }),
+  }),
+  getImage: (imageId) => apiCall(`/images/${imageId}`),
+  deleteImage: (imageId) => apiCall(`/images/${imageId}`, { method: 'DELETE' }),
 };
 
 export default api;

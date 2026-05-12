@@ -27,6 +27,12 @@ function EventCreate() {
     eventFor: "all",
     additionalInfo: "",
   });
+  const [eventImage, setEventImage] = useState({
+    file: null,
+    preview: null,
+    imageId: null,
+    uploading: false,
+  });
   const [organizer, setOrganizer] = useState({
     name: "",
     email: "",
@@ -49,6 +55,9 @@ function EventCreate() {
   const [activeTab, setActiveTab] = useState("event-details");
   const [createdEventId, setCreatedEventId] = useState(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [draftEvent, setDraftEvent] = useState(null);
+  const [loadingDraft, setLoadingDraft] = useState(true);
+  const [showingDraft, setShowingDraft] = useState(false);
 
   const steps = [
     { id: "event-details", label: "Event Details" },
@@ -57,6 +66,24 @@ function EventCreate() {
   ];
 
   const currentStepIndex = steps.findIndex(step => step.id === activeTab);
+
+  // Check for existing draft event on component mount
+  useEffect(() => {
+    const checkForDraft = async () => {
+      try {
+        const response = await api.getDraftEvent();
+        if (response.data && response.data.event_id) {
+          setDraftEvent(response.data);
+        }
+      } catch (error) {
+        console.error("Error checking for draft event:", error);
+      } finally {
+        setLoadingDraft(false);
+      }
+    };
+
+    checkForDraft();
+  }, []);
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -137,6 +164,85 @@ function EventCreate() {
     setStatus({ type: "", message: "", eventId: "" });
   };
 
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setStatus({ 
+        type: "error", 
+        message: "Invalid image format. Please upload JPEG, PNG, GIF, or WebP." 
+      });
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus({ 
+        type: "error", 
+        message: "Image size must be less than 5MB." 
+      });
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setEventImage({
+        file: file,
+        preview: e.target.result,
+        imageId: null,
+        uploading: false,
+      });
+      setStatus({ type: "", message: "" });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadImage = async () => {
+    if (!eventImage.file) return;
+
+    try {
+      setEventImage(prev => ({ ...prev, uploading: true }));
+      setStatus({ type: "loading", message: "Uploading image..." });
+
+      const response = await api.uploadImage(
+        eventImage.preview,
+        eventImage.file.name,
+        formData.title || "Event Image"
+      );
+
+      if (response.success) {
+        setEventImage(prev => ({
+          ...prev,
+          imageId: response.data.image_id,
+          uploading: false,
+        }));
+        setStatus({ 
+          type: "success", 
+          message: "Image uploaded successfully!" 
+        });
+      }
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: "Error uploading image: " + error.message
+      });
+      setEventImage(prev => ({ ...prev, uploading: false }));
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setEventImage({
+      file: null,
+      preview: null,
+      imageId: null,
+      uploading: false,
+    });
+  };
+
   const validateForm = () => {
     const nextErrors = {};
 
@@ -201,13 +307,15 @@ function EventCreate() {
       entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
       category: formData.category,
       additional_info: formData.additionalInfo,
+      image_id: eventImage.imageId || null,
       organizer_details: organizer.name ? organizer : null,
       registration_fields: registrationFields,
-      success_page_config: successPageConfig
+      success_page_config: successPageConfig,
+      is_draft: false,
     };
 
     try {
-      setStatus({ type: "loading", message: "Creating event in database..." });
+      setStatus({ type: "loading", message: "Publishing event..." });
       const response = await api.createEvent(eventPayload);
 
       if (response.success) {
@@ -218,7 +326,7 @@ function EventCreate() {
         setShowSuccessPopup(true);
         setStatus({
           type: "success",
-          message: `Event "${formData.title}" created successfully! 🎉`,
+          message: `Event "${formData.title}" published successfully! 🎉`,
           eventId: eventId,
           landingPageUrl: landingPageUrl,
         });
@@ -226,12 +334,212 @@ function EventCreate() {
     } catch (error) {
       setStatus({
         type: "error",
-        message: error.message || "Error creating event. Please try again.",
+        message: error.message || "Error publishing event. Please try again.",
         eventId: "",
         landingPageUrl: "",
       });
       console.error("Event creation error:", error);
     }
+  };
+
+  const handleSaveDraft = async () => {
+    // Prepare date-time strings (only if provided)
+    const startDateTime = formData.startDate ? `${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00` : null;
+    const endDateTime = formData.endDate ? `${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00` : null;
+
+    // Map to backend schema - with is_draft = true
+    const draftPayload = {
+      event_name: formData.title || "Untitled Event",
+      description: formData.description,
+      start_date_time: startDateTime,
+      end_date_time: endDateTime,
+      address: formData.location,
+      event_for: formData.eventFor,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+      entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+      category: formData.category,
+      additional_info: formData.additionalInfo,
+      image_id: eventImage.imageId || null,
+      organizer_details: organizer.name ? organizer : null,
+      registration_fields: registrationFields,
+      success_page_config: successPageConfig,
+      is_draft: true,
+    };
+
+    try {
+      setStatus({ type: "loading", message: "Saving draft..." });
+      const response = await api.createEvent(draftPayload);
+
+      if (response.success) {
+        setDraftEvent(response.data);
+        setShowingDraft(true);
+        setStatus({
+          type: "success",
+          message: `Draft event "${formData.title || 'Untitled Event'}" saved successfully!`,
+          eventId: "",
+          landingPageUrl: "",
+        });
+      }
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error.message || "Error saving draft. Please try again.",
+        eventId: "",
+        landingPageUrl: "",
+      });
+      console.error("Draft save error:", error);
+    }
+  };
+
+  const handlePublishDraft = async () => {
+    if (!draftEvent || !draftEvent.event_id) return;
+
+    // Validate required fields are complete
+    if (!formData.title.trim() || !formData.description.trim() || !formData.startDate || !formData.endDate || !formData.location.trim()) {
+      setStatus({
+        type: "error",
+        message: "Please complete all required fields (title, description, dates, location) before publishing.",
+        eventId: "",
+      });
+      return;
+    }
+
+    // Prepare date-time strings
+    const startDateTime = `${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`;
+    const endDateTime = `${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`;
+
+    const publishPayload = {
+      event_name: formData.title,
+      description: formData.description,
+      start_date_time: startDateTime,
+      end_date_time: endDateTime,
+      address: formData.location,
+      event_for: formData.eventFor,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+      entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+      category: formData.category,
+      additional_info: formData.additionalInfo,
+      image_id: eventImage.imageId || null,
+      organizer_details: organizer.name ? organizer : null,
+      registration_fields: registrationFields,
+      success_page_config: successPageConfig,
+      is_draft: false,
+    };
+
+    try {
+      setStatus({ type: "loading", message: "Publishing draft event..." });
+      const response = await api.updateEvent(draftEvent.event_id, publishPayload);
+
+      if (response.success) {
+        const eventId = response.data.event_id;
+        const landingPageUrl = `/event/${eventId}`;
+        
+        setCreatedEventId(eventId);
+        setShowSuccessPopup(true);
+        setDraftEvent(null);
+        setShowingDraft(false);
+        setStatus({
+          type: "success",
+          message: `Draft event "${formData.title}" published successfully! 🎉`,
+          eventId: eventId,
+          landingPageUrl: landingPageUrl,
+        });
+      }
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error.message || "Error publishing draft. Please try again.",
+        eventId: "",
+        landingPageUrl: "",
+      });
+      console.error("Draft publish error:", error);
+    }
+  };
+
+  const handleDeleteDraft = async () => {
+    if (!draftEvent || !draftEvent.event_id) return;
+
+    if (!window.confirm("Are you sure you want to delete this draft event? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setStatus({ type: "loading", message: "Deleting draft..." });
+      await api.deleteEvent(draftEvent.event_id);
+
+      setDraftEvent(null);
+      setShowingDraft(false);
+      setFormData({
+        title: "",
+        description: "",
+        startDate: "",
+        startTime: "09:00",
+        startPeriod: "AM",
+        endDate: "",
+        endTime: "05:00",
+        endPeriod: "PM",
+        location: "",
+        capacity: "",
+        entryFee: "",
+        category: "EVENT",
+        eventFor: "all",
+        additionalInfo: "",
+      });
+      setEventImage({
+        file: null,
+        preview: null,
+        imageId: null,
+        uploading: false,
+      });
+      setStatus({
+        type: "success",
+        message: "Draft event deleted successfully.",
+        eventId: "",
+        landingPageUrl: "",
+      });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error.message || "Error deleting draft. Please try again.",
+        eventId: "",
+        landingPageUrl: "",
+      });
+      console.error("Draft delete error:", error);
+    }
+  };
+
+  const handleViewDraft = () => {
+    if (!draftEvent) return;
+    
+    // Load draft data into form
+    setFormData({
+      title: draftEvent.event_name || "",
+      description: draftEvent.description || "",
+      startDate: draftEvent.start_date_time ? draftEvent.start_date_time.split('T')[0] : "",
+      startTime: draftEvent.start_date_time ? draftEvent.start_date_time.split('T')[1].substring(0, 5) : "09:00",
+      startPeriod: "AM",
+      endDate: draftEvent.end_date_time ? draftEvent.end_date_time.split('T')[0] : "",
+      endTime: draftEvent.end_date_time ? draftEvent.end_date_time.split('T')[1].substring(0, 5) : "05:00",
+      endPeriod: "PM",
+      location: draftEvent.address || "",
+      capacity: draftEvent.capacity || "",
+      entryFee: draftEvent.entry_fee || "",
+      category: draftEvent.category || "EVENT",
+      eventFor: draftEvent.event_for || "all",
+      additionalInfo: draftEvent.additional_info || "",
+    });
+
+    if (draftEvent.image_id) {
+      setEventImage({
+        file: null,
+        preview: draftEvent.image_url || null,
+        imageId: draftEvent.image_id,
+        uploading: false,
+      });
+    }
+
+    setShowingDraft(true);
+    setActiveTab("event-details");
   };
 
   const handlePreviewLandingPage = () => {
@@ -253,6 +561,12 @@ function EventCreate() {
       category: "EVENT",
       additionalInfo: "",
     });
+    setEventImage({
+      file: null,
+      preview: null,
+      imageId: null,
+      uploading: false,
+    });
     setOrganizer({
       name: "",
       email: "",
@@ -269,11 +583,73 @@ function EventCreate() {
 
   return (
     <div className="page-shell">
+      {/* Draft Event Alert */}
+      {!loadingDraft && draftEvent && !showingDraft && (
+        <div style={{
+          background: "#fff7ed",
+          border: "2px solid #fb923c",
+          borderRadius: "8px",
+          padding: "1.5rem",
+          marginBottom: "1.5rem",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}>
+          <div>
+            <h3 style={{ margin: "0 0 0.5rem 0", color: "#92400e", fontWeight: "700" }}>
+              📝 You have an unsaved draft event
+            </h3>
+            <p style={{ margin: "0 0 0.5rem 0", color: "#b45309" }}>
+              <strong>"{draftEvent.event_name}"</strong> - Save your progress by editing this draft or delete it to create a new event
+            </p>
+            <p style={{ margin: "0", fontSize: "0.9rem", color: "#d97706" }}>
+              Drafted on: {new Date(draftEvent.draft_saved_at).toLocaleString()}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button
+              className="button button-primary"
+              onClick={handleViewDraft}
+              style={{
+                padding: "0.6rem 1.2rem",
+                fontSize: "0.95rem",
+                background: "#fb923c",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Edit Draft
+            </button>
+            <button
+              className="button button-text"
+              onClick={handleDeleteDraft}
+              style={{
+                padding: "0.6rem 1.2rem",
+                fontSize: "0.95rem",
+                color: "#dc2626",
+                fontWeight: "600",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: "inline", marginRight: "0.5rem" }}>
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="card event-create-card">
         <div className="card-header panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p className="panel-label">Event builder</p>
-            <h1 className="page-title">Create new event</h1>
+            <h1 className="page-title">{showingDraft ? "Edit Draft Event" : "Create new event"}</h1>
           </div>
           <button 
             onClick={() => navigate("/admin/dashboard")} 
@@ -562,6 +938,157 @@ function EventCreate() {
                   />
                 </div>
 
+                {/* Event Image Upload Section */}
+                <div style={{
+                  padding: "1.5rem",
+                  background: "#f0f9ff",
+                  borderRadius: "8px",
+                  marginTop: "2rem",
+                  marginBottom: "1.5rem",
+                  border: "2px dashed #0ea5e9"
+                }}>
+                  <h3 style={{
+                    fontSize: "1.1rem",
+                    fontWeight: "700",
+                    marginBottom: "1rem",
+                    color: "#111827"
+                  }}>📸 Event Image (Optional)</h3>
+
+                  {!eventImage.preview ? (
+                    <div>
+                      <label htmlFor="event-image" style={{
+                        display: "block",
+                        padding: "2rem",
+                        background: "white",
+                        border: "2px dashed #cbd5e1",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        textAlign: "center",
+                        transition: "all 0.3s ease",
+                      }} 
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.style.borderColor = "#0ea5e9";
+                        e.currentTarget.style.background = "#f0f9ff";
+                      }}
+                      onDragLeave={(e) => {
+                        e.currentTarget.style.borderColor = "#cbd5e1";
+                        e.currentTarget.style.background = "white";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.style.borderColor = "#cbd5e1";
+                        e.currentTarget.style.background = "white";
+                        if (e.dataTransfer.files?.[0]) {
+                          const event = new Event('change', { bubbles: true });
+                          Object.defineProperty(event, 'target', {
+                            value: { files: e.dataTransfer.files },
+                            enumerable: true
+                          });
+                          handleImageChange(event);
+                        }
+                      }}>
+                        <input
+                          id="event-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          style={{ display: "none" }}
+                        />
+                        <div>
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" style={{ marginBottom: "0.5rem", marginLeft: "auto", marginRight: "auto" }}>
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                          </svg>
+                          <p style={{ margin: "0.5rem 0", fontWeight: "600", color: "#0ea5e9" }}>
+                            Drag and drop your image here or click to select
+                          </p>
+                          <p style={{ margin: "0.5rem 0", fontSize: "0.9rem", color: "#64748b" }}>
+                            Supported: JPEG, PNG, GIF, WebP (Max 5MB)
+                          </p>
+                        </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{
+                        position: "relative",
+                        marginBottom: "1rem",
+                        borderRadius: "6px",
+                        overflow: "hidden",
+                        maxWidth: "300px",
+                      }}>
+                        <img 
+                          src={eventImage.preview} 
+                          alt="Event preview" 
+                          style={{
+                            width: "100%",
+                            height: "auto",
+                            display: "block",
+                            borderRadius: "6px",
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          style={{
+                            position: "absolute",
+                            top: "0.5rem",
+                            right: "0.5rem",
+                            background: "rgba(0, 0, 0, 0.6)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "50%",
+                            width: "32px",
+                            height: "32px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "18px",
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      
+                      {!eventImage.imageId && (
+                        <button
+                          type="button"
+                          onClick={handleUploadImage}
+                          disabled={eventImage.uploading}
+                          style={{
+                            padding: "0.5rem 1rem",
+                            background: "#0ea5e9",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: eventImage.uploading ? "not-allowed" : "pointer",
+                            fontWeight: "600",
+                            opacity: eventImage.uploading ? 0.6 : 1,
+                          }}
+                        >
+                          {eventImage.uploading ? "Uploading..." : "Upload Image"}
+                        </button>
+                      )}
+
+                      {eventImage.imageId && (
+                        <div style={{
+                          padding: "0.75rem 1rem",
+                          background: "#ecfdf5",
+                          border: "1px solid #86efac",
+                          borderRadius: "6px",
+                          color: "#166534",
+                          fontWeight: "600",
+                        }}>
+                          ✓ Image uploaded successfully (ID: {eventImage.imageId})
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Organizer Section */}
                 <div style={{
                   padding: "1.5rem",
@@ -721,8 +1248,26 @@ function EventCreate() {
                   <div className="success-action-row">
                     <button
                       type="button"
+                      className="button button-secondary"
+                      onClick={handleSaveDraft}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        marginRight: "1rem",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                      </svg>
+                      Save as Draft
+                    </button>
+                    <button
+                      type="button"
                       className="button button-primary"
-                      onClick={handleCreateEvent}
+                      onClick={showingDraft ? handlePublishDraft : handleCreateEvent}
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
@@ -734,7 +1279,7 @@ function EventCreate() {
                         <polyline points="17 17 12 12 7 17"/>
                         <polyline points="12 12 12 3"/>
                       </svg>
-                      Create Event & Generate Landing Page
+                      {showingDraft ? "Publish Draft Event" : "Create Event & Generate Landing Page"}
                     </button>
                   </div>
                 </>

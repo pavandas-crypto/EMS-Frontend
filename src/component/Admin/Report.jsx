@@ -52,6 +52,8 @@ export default function Report() {
   const [sortAsc, setSortAsc]             = useState(true);
   const [page, setPage]                   = useState(1);
   const [pageSize, setPageSize]           = useState(10);
+  const [companyFilter, setCompanyFilter] = useState("all");
+  const [memberPage, setMemberPage]       = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -147,6 +149,20 @@ export default function Report() {
       .sort((a, b) => b.total - a.total);
   }, [base]);
 
+  /* company-wise participants filtered */
+  const companyParticipants = useMemo(() => {
+    if (companyFilter === "all") return base;
+    return base.filter((p) => p.company === companyFilter);
+  }, [base, companyFilter]);
+
+  const sortedCompanyParticipants = useMemo(() => {
+    return [...companyParticipants].sort((a, b) => {
+      const av = (a[sortKey] ?? "").toString().toLowerCase();
+      const bv = (b[sortKey] ?? "").toString().toLowerCase();
+      return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+  }, [companyParticipants, sortKey, sortAsc]);
+
   /* member-wise summary */
   const memberGroups = useMemo(() => {
     const map = {};
@@ -159,6 +175,15 @@ export default function Report() {
     });
     return Object.values(map);
   }, [base]);
+
+  /* member details (TSSIA members only) */
+  const memberDetails = useMemo(() => {
+    return base.filter((p) => p.membership === "Member")
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [base]);
+
+  const memberDetailsTotalPages = Math.max(1, Math.ceil(memberDetails.length / pageSize));
+  const memberDetailsPaginated = memberDetails.slice((memberPage - 1) * pageSize, memberPage * pageSize);
 
   /* export */
   const handleExport = () => {
@@ -174,9 +199,10 @@ export default function Report() {
         ({ Company: company, "Total Registered": total, "Total Approved": approved, "Total Attended": attended, Participants: members })
       ), `company_wise_${new Date().toISOString().slice(0,10)}.csv`);
     } else {
-      exportCSV(memberGroups.map(({ membership, total, approved, attended }) =>
-        ({ Membership: membership, "Total Registered": total, "Total Approved": approved, "Total Attended": attended })
-      ), `member_wise_${new Date().toISOString().slice(0,10)}.csv`);
+      exportCSV(memberDetails.map(({ id, ...r }) => ({
+        Name: r.name, Email: r.email, Phone: r.phone, Company: r.company,
+        "Membership ID": r.qrPass, Status: r.status,
+      })), `member_wise_${new Date().toISOString().slice(0,10)}.csv`);
     }
   };
 
@@ -416,12 +442,24 @@ export default function Report() {
       {/* ── Company-wise table ───────────────────────────────── */}
       {tab === "company" && (
         <div className="rp-card">
+          <div className="rp-filters-card" style={{ marginBottom: 16, borderTop: "1px solid #e9ecef", borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+            <div className="rp-select-wrap">
+              <I.Building/>
+              <select className="rp-select" value={companyFilter}
+                onChange={(e) => { setCompanyFilter(e.target.value); setPage(1); setMemberPage(1); }}>
+                <option value="all">All Companies</option>
+                {companyGroups.map((g) => <option key={g.company} value={g.company}>{g.company}</option>)}
+              </select>
+            </div>
+          </div>
           <div className="rp-table-wrap">
             {loading ? (
                <div className="rp-empty"><p>Loading data...</p></div>
-            ) : companyGroups.length === 0 ? (
+            ) : companyFilter === "all" && companyGroups.length === 0 ? (
               <div className="rp-empty"><I.Report/><p>No data</p><span>Adjust filters</span></div>
-            ) : (
+            ) : companyFilter !== "all" && sortedCompanyParticipants.length === 0 ? (
+              <div className="rp-empty"><I.Report/><p>No participants in this company</p><span>Select a different company</span></div>
+            ) : companyFilter === "all" ? (
               <table className="rp-table">
                 <thead>
                   <tr>
@@ -451,58 +489,121 @@ export default function Report() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Member-wise table ────────────────────────────────── */}
-      {tab === "member" && (
-        <div className="rp-card">
-          <div className="rp-table-wrap">
-            {loading ? (
-               <div className="rp-empty"><p>Loading data...</p></div>
-            ) : memberGroups.length === 0 ? (
-              <div className="rp-empty"><I.Report/><p>No data</p><span>Adjust filters</span></div>
             ) : (
               <table className="rp-table">
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>Membership Type</th>
-                    <th className="rp-tc">Total Registered</th>
-                    <th className="rp-tc">Total Approved</th>
-                    <th className="rp-tc">Total Attended</th>
-                    <th className="rp-tc">Attendance Rate</th>
+                    <th onClick={() => handleSort("name")} className="rp-th-sort">Name <SortBtn col="name"/></th>
+                    <th onClick={() => handleSort("email")} className="rp-th-sort">Email <SortBtn col="email"/></th>
+                    <th onClick={() => handleSort("designation")} className="rp-th-sort">Designation <SortBtn col="designation"/></th>
+                    <th onClick={() => handleSort("membership")} className="rp-th-sort">Membership <SortBtn col="membership"/></th>
+                    <th onClick={() => handleSort("status")} className="rp-th-sort">Status <SortBtn col="status"/></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {memberGroups.map((g, i) => {
-                    const rate = g.total ? Math.round((g.attended / g.total) * 100) : 0;
-                    return (
-                      <tr key={g.membership}>
-                        <td className="rp-td-num">{i + 1}</td>
-                        <td>
-                          <span className={`rp-badge ${g.membership === "Member" ? "rp-badge--member" : "rp-badge--non"}`} style={{ fontSize: 12.5 }}>
-                            {g.membership}
-                          </span>
-                        </td>
-                        <td className="rp-tc"><span className="rp-num-chip">{g.total}</span></td>
-                        <td className="rp-tc"><span className="rp-num-chip rp-num-chip--green">{g.approved}</span></td>
-                        <td className="rp-tc"><span className="rp-num-chip rp-num-chip--yellow">{g.attended}</span></td>
-                        <td className="rp-tc">
-                          <div className="rp-rate-wrap">
-                            <div className="rp-rate-bar">
-                              <div className="rp-rate-fill" style={{ width: `${rate}%` }}/>
-                            </div>
-                            <span className="rp-rate-txt">{rate}%</span>
+                  {sortedCompanyParticipants.map((p, i) => (
+                    <tr key={p.id}>
+                      <td className="rp-td-num">{i + 1}</td>
+                      <td>
+                        <div className="rp-person">
+                          <div className="rp-avatar">{p.name.split(" ").map((n) => n[0]).join("").slice(0,2)}</div>
+                          <div>
+                            <div className="rp-name">{p.name}</div>
+                            <div className="rp-email">{p.phone || "—"}</div>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </div>
+                      </td>
+                      <td><span className="rp-cell">{p.email}</span></td>
+                      <td><span className="rp-cell rp-desig">{p.designation}</span></td>
+                      <td>
+                        <span className={`rp-badge ${p.membership === "Member" ? "rp-badge--member" : "rp-badge--non"}`}>
+                          {p.membership}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`rp-badge ${p.status === "attended" ? "rp-badge--attended" : p.status === "approved" ? "rp-badge--approved" : "rp-badge--pending"}`}>
+                          {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Member-wise table (TSSIA Members) ────────────────── */}
+      {tab === "member" && (
+        <div className="rp-card">
+          <div className="rp-table-wrap">
+            {loading ? (
+               <div className="rp-empty"><p>Loading data...</p></div>
+            ) : memberDetails.length === 0 ? (
+              <div className="rp-empty"><I.Report/><p>No TSSIA members found</p><span>Adjust filters</span></div>
+            ) : (
+              <>
+              <table className="rp-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Company</th>
+                    <th>Membership ID</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {memberDetailsPaginated.map((p, i) => (
+                    <tr key={p.id}>
+                      <td className="rp-td-num">{(memberPage - 1) * pageSize + i + 1}</td>
+                      <td>
+                        <div className="rp-person">
+                          <div className="rp-avatar">{p.name.split(" ").map((n) => n[0]).join("").slice(0,2)}</div>
+                          <div>
+                            <div className="rp-name">{p.name}</div>
+                            <div className="rp-email">{p.phone || "—"}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className="rp-cell">{p.email}</span></td>
+                      <td><span className="rp-cell">{p.company}</span></td>
+                      <td><span className="rp-qr"><I.Qr/>{p.qrPass}</span></td>
+                      <td>
+                        <span className={`rp-badge ${p.status === "attended" ? "rp-badge--attended" : p.status === "approved" ? "rp-badge--approved" : "rp-badge--pending"}`}>
+                          {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                        </span>
+                      </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+              {memberDetails.length > pageSize && (
+                <div className="rp-pagination">
+                  <span className="rp-pg-info">
+                    {(memberPage - 1) * pageSize + 1}–{Math.min(memberPage * pageSize, memberDetails.length)} of {memberDetails.length}
+                  </span>
+                  <div className="rp-pg-btns">
+                    <button className="rp-pg-btn" disabled={memberPage === 1} onClick={() => setMemberPage((p) => p - 1)}>
+                      <I.Chevron l/> Prev
+                    </button>
+                    {Array.from({ length: memberDetailsTotalPages }, (_, i) => i + 1)
+                      .filter((n) => n === 1 || n === memberDetailsTotalPages || Math.abs(n - memberPage) <= 1)
+                      .reduce((acc, n, i, arr) => { if (i > 0 && n - arr[i-1] > 1) acc.push("…"); acc.push(n); return acc; }, [])
+                      .map((item, i) => item === "…"
+                        ? <span key={`e${i}`} className="rp-pg-ellipsis">…</span>
+                        : <button key={item} className={`rp-pg-pill${memberPage === item ? " rp-pg-pill--active" : ""}`} onClick={() => setMemberPage(item)}>{item}</button>
+                      )}
+                    <button className="rp-pg-btn" disabled={memberPage === memberDetailsTotalPages} onClick={() => setMemberPage((p) => p + 1)}>
+                      Next <I.Chevron/>
+                    </button>
+                  </div>
+                </div>
+              )}
+              </>
             )}
           </div>
         </div>
@@ -619,8 +720,9 @@ export default function Report() {
 
         /* ── Card + Table ────────────────────────────── */
         .rp-card { background: #fff; border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden; }
-        .rp-table-wrap { overflow-x: auto; }
-        .rp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .rp-table-wrap { overflow-x: visible; overflow-y: visible; width: 100%; }
+        .rp-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+        .rp-table th, .rp-table td { word-break: break-word; }
         .rp-table thead tr { background: #111827; }
         .rp-table th {
           padding: 11px 16px; font-size: 11px; font-weight: 700;
@@ -742,6 +844,9 @@ export default function Report() {
           .rp-stats { grid-template-columns: 1fr 1fr; }
           .rp-filters-row { flex-direction: column; align-items: stretch; }
           .rp-search-wrap { max-width: 100%; }
+          .rp-table { font-size: 12px; }
+          .rp-table th, .rp-table td { padding: 10px 8px; }
+          .rp-person, .rp-company-cell { flex-direction: column; align-items: flex-start; gap: 4px; }
         }
       `}</style>
     </div>

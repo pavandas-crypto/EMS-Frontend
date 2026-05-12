@@ -11,6 +11,7 @@ function AdminDashboard() {
     total_scans: 0
   });
   const [loading, setLoading] = useState(true);
+  const [deleteInProgress, setDeleteInProgress] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState("start_date_time");
@@ -20,38 +21,53 @@ function AdminDashboard() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        // Fetch stats
-        const statsResponse = await api.getStats();
-        if (statsResponse.success) {
-          setSummary(statsResponse.data.summary);
-        }
-
-        // Fetch events
-        const eventsResponse = await api.getEvents(1, 50);
-        if (eventsResponse.success) {
-          setEvents(eventsResponse.data);
-        }
-      } catch (error) {
-        const msg = error.message || '';
-        if (msg.includes('Insufficient permissions') || msg.includes('No token') || msg.includes('Invalid or expired')) {
-          // Session expired or wrong role — force re-login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          navigate('/login');
-          return;
-        }
-        console.error("Error fetching dashboard data:", error);
-      } finally {
-        setLoading(false);
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const statsResponse = await api.getStats();
+      if (statsResponse.success) {
+        setSummary(statsResponse.data.summary);
       }
-    };
 
+      const eventsResponse = await api.getEvents(1, 50);
+      if (eventsResponse.success) {
+        setEvents(eventsResponse.data);
+      }
+    } catch (error) {
+      const msg = error.message || '';
+      if (msg.includes('Insufficient permissions') || msg.includes('No token') || msg.includes('Invalid or expired')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+        return;
+      }
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
   }, [navigate]);
+
+  const handleDeleteEvent = async (eventId, eventName) => {
+    const confirmed = window.confirm(
+      `Delete event \"${eventName}\" permanently? This will remove the event, all registrations, attendance logs, passes, and associated data. This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeleteInProgress(true);
+      await api.deleteEvent(eventId);
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      window.alert(error.message || 'Unable to delete event.');
+    } finally {
+      setDeleteInProgress(false);
+    }
+  };
   
   const filteredEvents = events.filter(event => {
     if (filterStatus === "All") return true;
@@ -308,6 +324,15 @@ function AdminDashboard() {
                               <Link to={`/admin/tickets?event_id=${event.event_id}`} className="ems-action-btn" title="Tickets">
                                 <i className="bi bi-ticket"></i>
                               </Link>
+                              <button
+                                type="button"
+                                className="ems-action-btn ems-action-delete"
+                                title="Delete event"
+                                disabled={deleteInProgress}
+                                onClick={() => handleDeleteEvent(event.event_id, event.event_name)}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
                             </div>
                           </td>
                         </tr>

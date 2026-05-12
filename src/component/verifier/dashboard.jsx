@@ -22,6 +22,8 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
   const [userDetails, setUserDetails] = useState(null);
   const [activity, setActivity] = useState([]);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [editingScan, setEditingScan] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   const processCode = async (code) => {
     try {
@@ -47,6 +49,14 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
           code,
           status: status,
           name: data.participant_name,
+          details: {
+            name: data.participant_name,
+            email: data.email,
+            designation: data.designation,
+            organisation: data.organization,
+            mobile: data.phone,
+            passNo: data.pass_number
+          }
         }, ...prev].slice(0, 20));
 
         if (status === 'valid') playBeep(800, 200);
@@ -64,6 +74,7 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
         code,
         status: 'invalid',
         name: errorMsg,
+        details: null
       }, ...prev].slice(0, 20));
       playBeep(400, 500);
     }
@@ -74,6 +85,24 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
   };
 
   const clearResult = () => setScanResult('');
+
+  const handleEditScan = (scan) => {
+    setEditingScan(scan.id);
+    setEditForm(scan.details || {});
+  };
+
+  const handleSaveEdit = () => {
+    setActivity(prev => prev.map(item => 
+      item.id === editingScan ? { ...item, details: editForm } : item
+    ));
+    setEditingScan(null);
+    setEditForm({});
+  };
+
+  const handleCancelEdit = () => {
+    setEditingScan(null);
+    setEditForm({});
+  };
 
   useEffect(() => {
     let scanner = null;
@@ -244,13 +273,73 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
                 ) : (
                   activity.map(item => (
                     <div key={item.id} className="v-activity-item">
-                      <div>
-                        <div className="v-activity-name">{item.name}</div>
-                        <div className="v-activity-meta">{item.time} · {item.code}</div>
-                      </div>
-                      <span className={`v-activity-badge v-activity-badge--${item.status === 'valid' ? 'valid' : item.status === 'duplicate' ? 'dup' : 'invalid'}`}>
-                        {item.status}
-                      </span>
+                      {editingScan === item.id ? (
+                        <div style={{ width: '100%' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <input
+                              className="v-input"
+                              placeholder="Name"
+                              value={editForm.name || ''}
+                              onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                            />
+                            <input
+                              className="v-input"
+                              placeholder="Email"
+                              value={editForm.email || ''}
+                              onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                            />
+                            <input
+                              className="v-input"
+                              placeholder="Organisation"
+                              value={editForm.organisation || ''}
+                              onChange={(e) => setEditForm({...editForm, organisation: e.target.value})}
+                            />
+                            <input
+                              className="v-input"
+                              placeholder="Designation"
+                              value={editForm.designation || ''}
+                              onChange={(e) => setEditForm({...editForm, designation: e.target.value})}
+                            />
+                            <input
+                              className="v-input"
+                              placeholder="Mobile"
+                              value={editForm.mobile || ''}
+                              onChange={(e) => setEditForm({...editForm, mobile: e.target.value})}
+                            />
+                            <input
+                              className="v-input"
+                              placeholder="Pass No"
+                              value={editForm.passNo || ''}
+                              onChange={(e) => setEditForm({...editForm, passNo: e.target.value})}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button className="v-btn--small" onClick={handleSaveEdit}>Save</button>
+                            <button className="v-btn--small v-btn--secondary" onClick={handleCancelEdit}>Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <div className="v-activity-name">{item.name}</div>
+                            <div className="v-activity-meta">{item.time} · {item.code}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span className={`v-activity-badge v-activity-badge--${item.status === 'valid' ? 'valid' : item.status === 'duplicate' ? 'dup' : 'invalid'}`}>
+                              {item.status}
+                            </span>
+                            {item.details && (
+                              <button 
+                                className="v-btn--icon" 
+                                onClick={() => handleEditScan(item)}
+                                title="Edit details"
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))
                 )}

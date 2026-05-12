@@ -33,8 +33,8 @@ export function ProtectedVerifierRoute({ children }) {
     const user = localStorage.getItem("user");
     const userRole = localStorage.getItem("userRole");
 
-    // Only verifier can access verifier pages
-    if (token && user && userRole === "verifier") {
+    // Verifier pages are available to both verifiers and admins
+    if (token && user && (userRole === "verifier" || userRole === "admin")) {
       setIsValid(true);
     } else {
       setIsValid(false);

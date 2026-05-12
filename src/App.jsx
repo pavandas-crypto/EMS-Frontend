@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./component/login.jsx";
 import LandingPage from "./component/eventpage/landingpage.jsx";
@@ -10,7 +11,7 @@ import EventCreate from "./component/Admin/EventCreate.jsx";
 import EventEdit from "./component/Admin/EventEdit.jsx";
 import EventManage from "./component/Admin/EventMag.jsx";
 import Registrations from "./component/Admin/Registrations.jsx";
-import TicketDesigner from "./component/Admin/TicketDesigner.jsx";
+import TicketPage from "./component/Admin/TicketPage.jsx";
 import Verifiers from "./component/Admin/Verifiers.jsx";
 import Report from "./component/Admin/Report.jsx";
 import { ProtectedVerifierRoute, ProtectedAdminOnlyRoute } from "./utils/ProtectedRoute.jsx";
@@ -19,6 +20,7 @@ function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Login />} />
         <Route path="/event/:eventId" element={<EventLandingPage />} />
         <Route path="/event/:eventId/register" element={<RegisterForm />} />
@@ -31,7 +33,7 @@ function App() {
           <Route path="events/manage" element={<EventManage />} />
           <Route path="events/edit/:eventId" element={<EventEdit />} />
           <Route path="registrations" element={<Registrations />} />
-          <Route path="tickets" element={<TicketDesigner />} />
+          <Route path="tickets" element={<TicketPage />} />
           <Route path="verifiers" element={<Verifiers />} />
           <Route path="reports" element={<Report />} />
         </Route>
