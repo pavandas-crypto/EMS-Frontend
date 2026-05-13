@@ -23,6 +23,12 @@ function EventEdit() {
     entryFee: "",
     additionalInfo: "",
   });
+  const [eventImage, setEventImage] = useState({
+    file: null,
+    preview: null,
+    imageId: null,
+    uploading: false,
+  });
   const [organizer, setOrganizer] = useState({
     name: "",
     email: "",
@@ -45,6 +51,8 @@ function EventEdit() {
   const [activeTab, setActiveTab] = useState("event-details");
   const [loading, setLoading] = useState(true);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
+  const [publishedEventId, setPublishedEventId] = useState(null);
 
   useEffect(() => {
     const fetchEventData = async () => {
@@ -97,6 +105,16 @@ function EventEdit() {
           });
           setRegistrationFields(e.registration_fields || []);
           setSuccessPageConfig(e.success_page_config || null);
+          setIsDraft(e.is_draft || false);
+          
+          if (e.image_id) {
+            setEventImage({
+              file: null,
+              preview: e.image_url,
+              imageId: e.image_id,
+              uploading: false,
+            });
+          }
         }
       } catch (error) {
         setStatus({ type: "error", message: "Failed to load event data." });
@@ -171,6 +189,54 @@ function EventEdit() {
     setOrganizer((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setStatus({ type: "error", message: "Invalid image format." });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus({ type: "error", message: "Image size must be less than 5MB." });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const preview = e.target.result;
+      setEventImage(prev => ({
+        ...prev,
+        file: file,
+        preview: preview,
+        imageId: null,
+        uploading: true,
+      }));
+
+      try {
+        const response = await api.uploadImage(preview, file.name, formData.title || "Event Image");
+        if (response.success) {
+          setEventImage(prev => ({
+            ...prev,
+            imageId: response.data.image_id,
+            uploading: false,
+          }));
+          setStatus({ type: "success", message: "Image uploaded successfully!" });
+        }
+      } catch (error) {
+        setStatus({ type: "error", message: "Error uploading image: " + error.message });
+        setEventImage(prev => ({ ...prev, uploading: false }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setEventImage({ file: null, preview: null, imageId: null, uploading: false });
+  };
+
   const handleUpdateEvent = async () => {
     // Validate before update
     const nextErrors = {};
@@ -213,7 +279,8 @@ function EventEdit() {
       additional_info: formData.additionalInfo,
       organizer_details: organizer.name ? organizer : null,
       registration_fields: registrationFields,
-      success_page_config: successPageConfig
+      success_page_config: successPageConfig,
+      image_id: eventImage.imageId || null,
     };
 
     try {
@@ -228,6 +295,67 @@ function EventEdit() {
     }
   };
 
+  const handlePublishDraft = async () => {
+    // Validate required fields
+    const nextErrors = {};
+    if (!formData.title.trim()) nextErrors.title = "Event title is required.";
+    if (!formData.description.trim()) nextErrors.description = "Event description is required.";
+    if (!formData.startDate) nextErrors.startDate = "Start date is required.";
+    if (!formData.endDate) nextErrors.endDate = "End date is required.";
+    
+    if (formData.startDate && formData.endDate) {
+      const startDT = new Date(`${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`);
+      const endDT = new Date(`${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`);
+      
+      if (endDT <= startDT) {
+        nextErrors.endDate = "End date and time must be later than start date and time.";
+      }
+    }
+
+    if (!formData.location.trim()) nextErrors.location = "Location is required.";
+    
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      setActiveTab("event-details");
+      setStatus({ type: "error", message: "Please fix the validation errors before publishing." });
+      return;
+    }
+
+    const startDateTime = `${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`;
+    const endDateTime = `${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`;
+
+    const eventPayload = {
+      event_name: formData.title,
+      description: formData.description,
+      start_date_time: startDateTime,
+      end_date_time: endDateTime,
+      address: formData.location,
+      event_for: formData.eventFor,
+      category: formData.category,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+      entry_fee: formData.entryFee ? parseFloat(formData.entryFee) : 0,
+      additional_info: formData.additionalInfo,
+      organizer_details: organizer.name ? organizer : null,
+      registration_fields: registrationFields,
+      success_page_config: successPageConfig,
+      image_id: eventImage.imageId || null,
+      is_draft: false
+    };
+
+    try {
+      setStatus({ type: "loading", message: "Publishing event..." });
+      const response = await api.updateEvent(eventId, eventPayload);
+      if (response.success) {
+        setPublishedEventId(eventId);
+        setShowSuccessPopup(true);
+        setIsDraft(false);
+        setStatus({ type: "success", message: `Event "${formData.title}" published successfully! 🎉` });
+      }
+    } catch (error) {
+      setStatus({ type: "error", message: error.message || "Publishing failed." });
+    }
+  };
+
   if (loading) return <div className="page-shell"><div className="card">Loading event...</div></div>;
 
   return (
@@ -236,7 +364,7 @@ function EventEdit() {
         <div className="card-header panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p className="panel-label">Event editor</p>
-            <h1 className="page-title">Edit Event</h1>
+            <h1 className="page-title">{isDraft ? 'Edit Draft Event' : 'Edit Event'}</h1>
           </div>
           <button 
             onClick={() => navigate("/admin/dashboard")} 
@@ -484,6 +612,43 @@ function EventEdit() {
                   />
                 </div>
 
+                {/* Event Image Upload Section */}
+                <div style={{
+                  padding: "1.5rem",
+                  background: "#f0f9ff",
+                  borderRadius: "8px",
+                  marginTop: "2rem",
+                  marginBottom: "1.5rem",
+                  border: "2px dashed #0ea5e9"
+                }}>
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: "700", marginBottom: "1rem", color: "#111827" }}>📸 Event Image (Optional)</h3>
+
+                  {!eventImage.preview ? (
+                    <div>
+                      <label htmlFor="event-image" style={{
+                        display: "block", padding: "2rem", background: "white", border: "2px dashed #cbd5e1", borderRadius: "6px", cursor: "pointer", textAlign: "center"
+                      }}>
+                        <input id="event-image" type="file" accept="image/*" onChange={handleImageChange} style={{ display: "none" }} />
+                        <div>
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" style={{ marginBottom: "0.5rem", marginLeft: "auto", marginRight: "auto" }}>
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                          </svg>
+                          <p style={{ margin: "0.5rem 0", fontWeight: "600", color: "#0ea5e9" }}>Click to select an image</p>
+                        </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ position: "relative", marginBottom: "1rem", borderRadius: "6px", overflow: "hidden", maxWidth: "300px" }}>
+                        <img src={eventImage.preview} alt="Event preview" style={{ width: "100%", height: "auto", display: "block" }} />
+                        <button type="button" onClick={handleRemoveImage} style={{ position: "absolute", top: "0.5rem", right: "0.5rem", background: "rgba(0, 0, 0, 0.6)", color: "white", border: "none", borderRadius: "50%", width: "32px", height: "32px", cursor: "pointer" }}>✕</button>
+                      </div>
+                      {eventImage.uploading && <div style={{ padding: "0.5rem 1rem", background: "#f0f9ff", color: "#0369a1", borderRadius: "6px", fontSize: "0.9rem", fontWeight: "600", display: "inline-block" }}>Uploading image...</div>}
+                      {eventImage.imageId && <div style={{ padding: "0.75rem 1rem", background: "#ecfdf5", border: "1px solid #86efac", borderRadius: "6px", color: "#166534", fontWeight: "600" }}>✓ Image linked successfully</div>}
+                    </div>
+                  )}
+                </div>
+
                 {/* Organizer Section */}
                 <div style={{
                   padding: "1.5rem",
@@ -572,8 +737,19 @@ function EventEdit() {
           {activeTab === "success-page" && (
             <div>
               <SuccessPageBuilder initialConfig={successPageConfig} onSave={setSuccessPageConfig} />
-              <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end" }}>
-                <button className="button button-primary" onClick={handleUpdateEvent}>Update Event</button>
+              <div style={{ marginTop: "2rem", display: "flex", justifyContent: "flex-end", gap: "1rem" }}>
+                {isDraft && (
+                  <button 
+                    className="button button-primary" 
+                    onClick={handlePublishDraft}
+                    style={{ backgroundColor: '#10b981' }}
+                  >
+                    Publish Event
+                  </button>
+                )}
+                <button className="button button-primary" onClick={handleUpdateEvent}>
+                  {isDraft ? 'Save Draft' : 'Update Event'}
+                </button>
               </div>
             </div>
           )}
@@ -602,25 +778,34 @@ function EventEdit() {
               </div>
             </div>
 
-            <h2 className="success-title">Event Updated!</h2>
+            <h2 className="success-title">{publishedEventId ? 'Event Published!' : 'Event Updated!'}</h2>
             <p className="success-message">
-              Changes to <strong>"{formData.title}"</strong> have been saved successfully.
+              {publishedEventId 
+                ? <>Your event <strong>"{formData.title}"</strong> is now live and ready to accept registrations!</>
+                : <>Changes to <strong>"{formData.title}"</strong> have been saved successfully.</>
+              }
             </p>
 
             <div className="success-actions-vertical">
               <button 
                 className="button button-primary" 
-                onClick={() => window.open(`/event/${eventId}`, '_blank')}
+                onClick={() => window.open(`/event/${publishedEventId || eventId}`, '_blank')}
                 style={{ width: '100%', marginBottom: '1rem' }}
               >
                 View Landing Page
               </button>
               <button 
                 className="button button-secondary" 
-                onClick={() => navigate("/admin/dashboard")}
+                onClick={() => {
+                  setShowSuccessPopup(false);
+                  setPublishedEventId(null);
+                  if (publishedEventId) {
+                    navigate("/admin/dashboard");
+                  }
+                }}
                 style={{ width: '100%' }}
               >
-                Back to Dashboard
+                {publishedEventId ? 'Back to Dashboard' : 'Close'}
               </button>
             </div>
           </div>

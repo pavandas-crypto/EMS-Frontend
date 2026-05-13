@@ -187,16 +187,44 @@ function EventCreate() {
       return;
     }
 
-    // Create preview
+    // Create preview and upload automatically
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setEventImage({
+    reader.onload = async (e) => {
+      const preview = e.target.result;
+      setEventImage(prev => ({
+        ...prev,
         file: file,
-        preview: e.target.result,
+        preview: preview,
         imageId: null,
-        uploading: false,
-      });
-      setStatus({ type: "", message: "" });
+        uploading: true,
+      }));
+      setStatus({ type: "loading", message: "Uploading image..." });
+
+      try {
+        const response = await api.uploadImage(
+          preview,
+          file.name,
+          formData.title || "Event Image"
+        );
+
+        if (response.success) {
+          setEventImage(prev => ({
+            ...prev,
+            imageId: response.data.image_id,
+            uploading: false,
+          }));
+          setStatus({ 
+            type: "success", 
+            message: "Image uploaded successfully!" 
+          });
+        }
+      } catch (error) {
+        setStatus({
+          type: "error",
+          message: "Error uploading image: " + error.message
+        });
+        setEventImage(prev => ({ ...prev, uploading: false }));
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -1053,24 +1081,18 @@ function EventCreate() {
                         </button>
                       </div>
                       
-                      {!eventImage.imageId && (
-                        <button
-                          type="button"
-                          onClick={handleUploadImage}
-                          disabled={eventImage.uploading}
-                          style={{
-                            padding: "0.5rem 1rem",
-                            background: "#0ea5e9",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "6px",
-                            cursor: eventImage.uploading ? "not-allowed" : "pointer",
-                            fontWeight: "600",
-                            opacity: eventImage.uploading ? 0.6 : 1,
-                          }}
-                        >
-                          {eventImage.uploading ? "Uploading..." : "Upload Image"}
-                        </button>
+                      {eventImage.uploading && (
+                        <div style={{
+                          padding: "0.5rem 1rem",
+                          background: "#f0f9ff",
+                          color: "#0369a1",
+                          borderRadius: "6px",
+                          fontSize: "0.9rem",
+                          fontWeight: "600",
+                          display: "inline-block"
+                        }}>
+                          Uploading image...
+                        </div>
                       )}
 
                       {eventImage.imageId && (

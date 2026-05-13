@@ -1,140 +1,159 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../../api/api";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+import { TEMPLATES } from "./TicketDesigner";
+import { QRCodeCanvas } from "qrcode.react";
 
-// Icons
-const Icon = {
-  Download: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  ),
-  Printer: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="6 9 6 2 18 2 18 9" />
-      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
-      <path d="M6 18h.01" />
-      <path d="M18 18h.01" />
-    </svg>
-  ),
-  QR: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
-      <rect x="3" y="3" width="7" height="7" fill="currentColor" />
-      <rect x="14" y="3" width="7" height="7" fill="currentColor" />
-      <rect x="3" y="14" width="7" height="7" fill="currentColor" />
-      <rect x="14" y="14" width="2" height="2" fill="currentColor" />
-    </svg>
-  ),
-  Eye: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  ),
-  Trash: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <line x1="10" y1="11" x2="10" y2="17" />
-      <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-  ),
-  Clock: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  ),
-  Mail: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-    </svg>
-  ),
-  Building: (s = 20) => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="2" width="18" height="20" rx="2" />
-      <line x1="9" y1="2" x2="9" y2="22" />
-      <line x1="15" y1="2" x2="15" y2="22" />
-      <line x1="3" y1="7" x2="21" y2="7" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="17" x2="21" y2="17" />
-    </svg>
-  ),
+const TicketRenderer = ({ config, ticket, ticketRef }) => {
+  const getPos = (id) => config?.fieldPositions?.[id] || { x: 0, y: 0 };
+  const getPosTransform = (id) => `translate(${getPos(id).x}px, ${getPos(id).y}px)`;
+  
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "N/A";
+    return new Date(dateStr).toLocaleDateString("en-US", { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "N/A";
+    return new Date(dateStr).toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
+  };
+
+  return (
+    <div 
+      ref={ticketRef}
+      style={{ 
+        width: "350px", 
+        height: "650px", 
+        borderRadius: "40px", 
+        position: "relative", 
+        overflow: "hidden",
+        background: config?.backgroundType === "solid" ? (config?.primary || "#111") : `linear-gradient(${config?.gradientAngle || 0}deg, ${config?.gradientStart || "#000"}, ${config?.gradientEnd || "#111"})`,
+        border: `2px solid ${(config?.accent || "#6366f1")}44`,
+        fontFamily: "Inter, sans-serif",
+        color: "#fff"
+      }}
+    >
+      {/* Header: Event Name */}
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("event_name"), width: 270, textAlign: "center", fontSize: "1.8rem", fontWeight: 900, letterSpacing: "-1px" }}>
+        {ticket.event_name}
+      </div>
+
+      {/* PASS Label */}
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("pass_label"), width: 70, textAlign: "center", opacity: 0.6, fontSize: "0.8rem", fontWeight: 700, letterSpacing: "2px" }}>
+        PASS
+      </div>
+
+      {/* Avatar Circle */}
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("avatar"), width: 150, height: 150, borderRadius: "50%", border: "4px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="rgba(255,255,255,0.3)"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </div>
+
+      {/* Participant Details */}
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("participant_name"), width: 270, textAlign: "center", fontSize: "1.4rem", fontWeight: 800 }}>
+        {ticket.participant_name}
+      </div>
+
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("org_desig"), width: 270, textAlign: "center", opacity: 0.7, fontSize: "0.85rem", fontWeight: 500 }}>
+        {ticket.designation || "Participant"} {ticket.organization ? `• ${ticket.organization}` : ""}
+      </div>
+
+      {/* Address & Date/Time Section */}
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("event_address"), width: 270, textAlign: "left", fontSize: "0.85rem" }}>
+        <div style={{ opacity: 0.5, fontSize: "0.7rem", marginBottom: "4px" }}>Event Address</div>
+        {ticket.address || "TBA"}
+      </div>
+
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("date_time"), width: 270, display: "flex", gap: "2rem" }}>
+        <div>
+          <div style={{ opacity: 0.5, fontSize: "0.7rem", marginBottom: "4px" }}>Date</div>
+          <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{formatDate(ticket.start_date_time)}</div>
+        </div>
+        <div style={{ borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: "1.5rem" }}>
+          <div style={{ opacity: 0.5, fontSize: "0.7rem", marginBottom: "4px" }}>Time</div>
+          <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{formatTime(ticket.start_date_time)}</div>
+        </div>
+      </div>
+
+      {/* Bottom Bar: PassCode & QR Code */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 160, background: "rgba(255,255,255,0.03)", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", padding: "0 20px" }}>
+        <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("pass_code") }}>
+          <div style={{ transform: "rotate(-90deg)", opacity: 0.3, fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+            {ticket.pass_number}
+          </div>
+        </div>
+        
+        <div style={{ flex: 1 }} />
+
+        <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("qr_code"), width: 100, height: 100, background: "#fff", padding: "8px", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+          <QRCodeCanvas value={ticket.qr_code || JSON.stringify({ pass_number: ticket.pass_number, ticket_id: ticket.ticket_id })} size={84} />
+        </div>
+      </div>
+    </div>
+  );
 };
 
-function TicketManagement() {
+const TicketManagement = () => {
   const [tickets, setTickets] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState("");
-  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [status, setStatus] = useState({ type: "", msg: "" });
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState("");
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
+  const [templates, setTemplates] = useState({});
+  const [downloading, setDownloading] = useState(false);
+  const ticketRefs = useRef({});
 
   useEffect(() => {
     fetchEvents();
+    fetchTickets();
   }, []);
 
   useEffect(() => {
-    if (selectedEvent) {
-      fetchTickets();
-    }
-  }, [selectedEvent, page]);
+    fetchTickets();
+  }, [selectedEventId, pagination.page]);
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      const eventIds = [...new Set(tickets.map(t => t.event_id))];
+      const newTemplates = { ...templates };
+      let changed = false;
+      for (let id of eventIds) {
+        if (!newTemplates[id] && id) {
+          try {
+            const res = await api.getTicketTemplate(id);
+            if (res.success && res.data) {
+              newTemplates[id] = res.data.config;
+              changed = true;
+            }
+          } catch (e) {
+            console.error("Failed to fetch template for event", id);
+          }
+        }
+      }
+      if (changed) setTemplates(newTemplates);
+    };
+    if (tickets.length > 0) fetchTemplates();
+  }, [tickets]);
 
   const fetchEvents = async () => {
     try {
       const res = await api.getEvents(1, 100);
-      if (res.success) setEvents(res.data);
-    } catch (err) {
-      console.error(err);
-    }
+      if (res.success) setEvents(res.data || []);
+    } catch (err) { console.error(err); }
   };
 
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const res = await api.getEventTickets(selectedEvent, page, pageSize);
+      const res = selectedEventId 
+        ? await api.getEventTickets(selectedEventId, pagination.page)
+        : await api.getAllTickets(pagination.page);
+      
       if (res.success) {
-        setTickets(res.data);
-        setTotal(res.pagination?.total || 0);
+        setTickets(res.data || []);
+        setPagination(prev => ({ ...prev, totalPages: res.pagination?.totalPages || 1 }));
       }
-    } catch (err) {
-      console.error(err);
-      setStatus({ type: "error", msg: "Failed to fetch tickets" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownload = async (ticket) => {
-    try {
-      const res = await api.markTicketDownloaded(ticket.ticket_id);
-      if (res.success) {
-        setStatus({ type: "success", msg: "Ticket marked as downloaded" });
-        fetchTickets();
-        setTimeout(() => setStatus({ type: "", msg: "" }), 3000);
-      }
-    } catch (err) {
-      setStatus({ type: "error", msg: err.message });
-    }
-  };
-
-  const handlePrint = async (ticket) => {
-    try {
-      const res = await api.markTicketPrinted(ticket.ticket_id);
-      if (res.success) {
-        setStatus({ type: "success", msg: "Ticket marked as printed" });
-        fetchTickets();
-        setTimeout(() => setStatus({ type: "", msg: "" }), 3000);
-      }
-    } catch (err) {
-      setStatus({ type: "error", msg: err.message });
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
   const handleDelete = async (ticketId) => {
@@ -142,341 +161,192 @@ function TicketManagement() {
     try {
       const res = await api.deleteTicket(ticketId);
       if (res.success) {
-        setStatus({ type: "success", msg: "Ticket deleted successfully" });
-        fetchTickets();
-        setTimeout(() => setStatus({ type: "", msg: "" }), 3000);
+        setTickets(tickets.filter(t => t.ticket_id !== ticketId));
       }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDownloadSingle = async (ticketId) => {
+    setDownloading(true);
+    try {
+      const el = ticketRefs.current[ticketId];
+      if (!el) throw new Error("Ticket element not found");
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [350, 650] });
+      const eventName = tickets.find(t => t.ticket_id === ticketId)?.event_name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "event";
+      const participantName = tickets.find(t => t.ticket_id === ticketId)?.participant_name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "participant";
+      pdf.save(`ticket_${eventName}_${participantName}.pdf`);
+      
+      // Update download status optionally
+      await api.updateTicketStatus(ticketId, { is_downloaded: true });
+      setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, is_downloaded: true } : t));
     } catch (err) {
-      setStatus({ type: "error", msg: err.message });
+      console.error("Download failed", err);
+      alert("Failed to download ticket.");
+    } finally {
+      setDownloading(false);
     }
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const handleBulkDownload = async () => {
+    if (tickets.length === 0) return;
+    setDownloading(true);
+    try {
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [350, 650] });
+      for (let i = 0; i < tickets.length; i++) {
+        const ticketId = tickets[i].ticket_id;
+        const el = ticketRefs.current[ticketId];
+        if (el) {
+          const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
+          const imgData = canvas.toDataURL("image/png");
+          pdf.addImage(imgData, "PNG", 0, 0, 350, 650);
+          if (i < tickets.length - 1) pdf.addPage();
+        }
+      }
+      const eventName = events.find(e => e.event_id.toString() === selectedEventId)?.event_name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "all_events";
+      pdf.save(`bulk_tickets_${eventName}.pdf`);
+      
+      // Optionally update status for all
+      for (let t of tickets) {
+        if (!t.is_downloaded) {
+            await api.updateTicketStatus(t.ticket_id, { is_downloaded: true });
+        }
+      }
+      fetchTickets();
+    } catch (err) {
+      console.error("Bulk download failed", err);
+      alert("Failed to bulk download tickets.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
-    <div style={{ height: "calc(100vh - 100px)", padding: "1rem", background: "#04060d", color: "#fff", display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>Ticket Management</h1>
-        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <select
-            value={selectedEvent}
-            onChange={(e) => { setSelectedEvent(e.target.value); setPage(1); }}
-            style={{
-              padding: "0.75rem 1rem",
-              borderRadius: "12px",
-              border: "1px solid #334155",
-              background: "#0b1627",
-              color: "#fff",
-              fontSize: "0.95rem",
-              cursor: "pointer"
-            }}
+    <div style={{ padding: "2rem", height: "100%", display: "flex", flexDirection: "column", background: "#181818", color: "#fff" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
+        <h2 style={{ fontWeight: 800, margin: 0 }}>Pass Management</h2>
+        
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <select 
+            value={selectedEventId}
+            onChange={(e) => { setSelectedEventId(e.target.value); setPagination({ ...pagination, page: 1 }); }}
+            style={{ padding: "0.6rem 1rem", borderRadius: "8px", border: "1px solid #333", background: "#121212", color: "#fff", fontWeight: 600 }}
           >
-            <option value="">Select an event...</option>
-            {events.map((e) => (
-              <option key={e.event_id} value={e.event_id}>{e.event_name}</option>
-            ))}
+            <option value="">All Events</option>
+            {events.map(e => <option key={e.event_id} value={e.event_id}>{e.event_name}</option>)}
           </select>
-          <span style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Total: {total}</span>
+          <button 
+            onClick={() => fetchTickets()}
+            style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", background: "#333", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer" }}
+          >
+            Refresh
+          </button>
+          <button 
+            onClick={handleBulkDownload}
+            disabled={downloading || tickets.length === 0}
+            style={{ padding: "0.6rem 1.25rem", borderRadius: "8px", background: "#6366f1", color: "#fff", border: "none", fontWeight: 700, cursor: "pointer", opacity: (downloading || tickets.length === 0) ? 0.7 : 1 }}
+          >
+            {downloading ? "Processing..." : "Bulk Download PDF"}
+          </button>
         </div>
       </div>
 
-      {/* Status Message */}
-      {status.msg && (
-        <div style={{
-          padding: "1rem",
-          borderRadius: "12px",
-          background: status.type === "success" ? "#064e3b" : "#7f1d1d",
-          color: "#fff",
-          fontSize: "0.95rem"
-        }}>
-          {status.msg}
+      <div style={{ background: "#121212", borderRadius: "16px", border: "1px solid #333", overflow: "hidden", flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+            <thead>
+              <tr style={{ background: "#1e1e1e", borderBottom: "1px solid #333" }}>
+                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Pass Number</th>
+                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Participant</th>
+                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Event</th>
+                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Status</th>
+                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="5" style={{ padding: "4rem", textAlign: "center", color: "#666" }}>Loading data...</td></tr>
+              ) : tickets.length === 0 ? (
+                <tr><td colSpan="5" style={{ padding: "4rem", textAlign: "center", color: "#666" }}>No tickets found</td></tr>
+              ) : (
+                tickets.map(ticket => (
+                  <tr key={ticket.ticket_id} style={{ borderBottom: "1px solid #1e1e1e" }}>
+                    <td style={{ padding: "1.25rem" }}>
+                      <code style={{ color: "#6366f1", fontWeight: 700 }}>{ticket.pass_number}</code>
+                    </td>
+                    <td style={{ padding: "1.25rem" }}>
+                      <div style={{ fontWeight: 700 }}>{ticket.participant_name}</div>
+                      <div style={{ fontSize: "0.75rem", color: "#666" }}>{ticket.participant_email}</div>
+                    </td>
+                    <td style={{ padding: "1.25rem" }}>
+                      <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>{ticket.event_name}</div>
+                    </td>
+                    <td style={{ padding: "1.25rem" }}>
+                      <span style={{ 
+                        padding: "4px 10px", borderRadius: "4px", fontSize: "0.7rem", fontWeight: 800,
+                        background: ticket.is_downloaded ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)",
+                        color: ticket.is_downloaded ? "#10b981" : "#f59e0b",
+                        border: `1px solid ${ticket.is_downloaded ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)"}`
+                      }}>
+                        {ticket.is_downloaded ? "DOWNLOADED" : "PENDING"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "1.25rem", textAlign: "right" }}>
+                      <button 
+                        onClick={() => handleDownloadSingle(ticket.ticket_id)}
+                        disabled={downloading}
+                        style={{ border: "1px solid #333", background: "#1e1e1e", color: "#fff", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700, marginRight: "8px", opacity: downloading ? 0.5 : 1 }}
+                      >
+                        Download PDF
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(ticket.ticket_id)}
+                        style={{ border: "none", background: "transparent", color: "#ef4444", padding: "6px 8px", cursor: "pointer", fontSize: "0.75rem", fontWeight: 700 }}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
-
-      {/* Tickets List */}
-      <div style={{ flex: 1, overflow: "auto", background: "#08101f", borderRadius: "16px", border: "1px solid #22314f", padding: "1rem" }}>
-        {loading ? (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#94a3b8" }}>
-            Loading tickets...
-          </div>
-        ) : tickets.length === 0 ? (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", color: "#94a3b8" }}>
-            No tickets found. Approve participants to generate tickets.
-          </div>
-        ) : (
-          <div style={{ display: "grid", gap: "0.75rem" }}>
-            {tickets.map((ticket) => (
-              <div
-                key={ticket.ticket_id}
-                style={{
-                  background: "#0b1627",
-                  border: "1px solid #1e293b",
-                  borderRadius: "12px",
-                  padding: "1rem",
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr auto",
-                  gap: "1rem",
-                  alignItems: "center",
-                  transition: "all 0.2s",
-                  cursor: "pointer",
-                  _hover: { borderColor: "#334155" }
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, color: "#fff", marginBottom: "0.25rem" }}>
-                    {ticket.participant_name}
-                  </div>
-                  <div style={{ fontSize: "0.85rem", color: "#94a3b8", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                    <Icon.Mail s={14} /> {ticket.participant_email}
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.25rem" }}>Event</div>
-                  <div style={{ fontWeight: 600, color: "#fff" }}>{ticket.event_name}</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.25rem" }}>Pass & Status</div>
-                  <div style={{ fontWeight: 600, color: "#fff", display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-                    <span style={{ background: "#1e293b", padding: "0.25rem 0.6rem", borderRadius: "6px", fontSize: "0.8rem" }}>
-                      {ticket.pass_number}
-                    </span>
-                    {ticket.is_downloaded && (
-                      <span style={{ background: "#065f46", color: "#86efac", padding: "0.25rem 0.6rem", borderRadius: "6px", fontSize: "0.8rem" }}>
-                        ✓ Downloaded
-                      </span>
-                    )}
-                    {ticket.is_printed && (
-                      <span style={{ background: "#064e3b", color: "#67e8f9", padding: "0.25rem 0.6rem", borderRadius: "6px", fontSize: "0.8rem" }}>
-                        ✓ Printed
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                  <button
-                    onClick={() => { setSelectedTicket(ticket); setShowPreview(true); }}
-                    title="Preview Ticket"
-                    style={{
-                      background: "transparent",
-                      border: "1px solid #334155",
-                      borderRadius: "8px",
-                      color: "#94a3b8",
-                      padding: "0.6rem",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justify: "center",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <Icon.Eye s={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDownload(ticket)}
-                    title="Mark as Downloaded"
-                    style={{
-                      background: ticket.is_downloaded ? "#065f46" : "transparent",
-                      border: "1px solid #334155",
-                      borderRadius: "8px",
-                      color: ticket.is_downloaded ? "#86efac" : "#94a3b8",
-                      padding: "0.6rem",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <Icon.Download s={16} />
-                  </button>
-                  <button
-                    onClick={() => handlePrint(ticket)}
-                    title="Mark as Printed"
-                    style={{
-                      background: ticket.is_printed ? "#064e3b" : "transparent",
-                      border: "1px solid #334155",
-                      borderRadius: "8px",
-                      color: ticket.is_printed ? "#67e8f9" : "#94a3b8",
-                      padding: "0.6rem",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <Icon.Printer s={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(ticket.ticket_id)}
-                    title="Delete Ticket"
-                    style={{
-                      background: "transparent",
-                      border: "1px solid #7f1d1d",
-                      borderRadius: "8px",
-                      color: "#ef4444",
-                      padding: "0.6rem",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      transition: "all 0.2s"
-                    }}
-                  >
-                    <Icon.Trash s={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* Pagination */}
-      {!loading && tickets.length > 0 && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "1rem", borderTop: "1px solid #334155" }}>
-          <div style={{ color: "#94a3b8", fontSize: "0.9rem" }}>
-            Page {page} of {totalPages} ({total} total)
-          </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              style={{
-                padding: "0.6rem 1rem",
-                borderRadius: "8px",
-                border: "1px solid #334155",
-                background: "transparent",
+      {pagination.totalPages > 1 && (
+        <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "center", gap: "0.5rem" }}>
+          {Array.from({ length: pagination.totalPages }).map((_, i) => (
+            <button 
+              key={i}
+              onClick={() => setPagination({ ...pagination, page: i + 1 })}
+              style={{ 
+                width: "36px", height: "36px", borderRadius: "8px", border: "1px solid #333",
+                background: pagination.page === i + 1 ? "#6366f1" : "#121212",
                 color: "#fff",
-                cursor: page === 1 ? "not-allowed" : "pointer",
-                opacity: page === 1 ? 0.5 : 1
+                fontWeight: 700, cursor: "pointer"
               }}
             >
-              Previous
+              {i + 1}
             </button>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              style={{
-                padding: "0.6rem 1rem",
-                borderRadius: "8px",
-                border: "1px solid #334155",
-                background: "transparent",
-                color: "#fff",
-                cursor: page === totalPages ? "not-allowed" : "pointer",
-                opacity: page === totalPages ? 0.5 : 1
-              }}
-            >
-              Next
-            </button>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Ticket Preview Modal */}
-      {showPreview && selectedTicket && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0, 0, 0, 0.8)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: "#08101f",
-            border: "1px solid #22314f",
-            borderRadius: "16px",
-            padding: "2rem",
-            maxWidth: "500px",
-            maxHeight: "80vh",
-            overflow: "auto"
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-              <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700 }}>Ticket Details</h2>
-              <button
-                onClick={() => setShowPreview(false)}
-                style={{ background: "transparent", border: "none", color: "#94a3b8", fontSize: "1.5rem", cursor: "pointer" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ display: "grid", gap: "1rem" }}>
-              <div style={{ padding: "1rem", background: "#0b1627", borderRadius: "12px" }}>
-                <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.25rem" }}>Participant</div>
-                <div style={{ fontWeight: 600, color: "#fff" }}>{selectedTicket.participant_name}</div>
-                <div style={{ fontSize: "0.85rem", color: "#64748b" }}>{selectedTicket.participant_email}</div>
-              </div>
-
-              <div style={{ padding: "1rem", background: "#0b1627", borderRadius: "12px" }}>
-                <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.25rem" }}>Event Details</div>
-                <div style={{ fontWeight: 600, color: "#fff" }}>{selectedTicket.event_name}</div>
-                <div style={{ fontSize: "0.85rem", color: "#64748b", display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
-                  <Icon.Clock s={14} /> {new Date(selectedTicket.event_date).toLocaleDateString()}
-                </div>
-                <div style={{ fontSize: "0.85rem", color: "#64748b", display: "flex", gap: "0.5rem" }}>
-                  <Icon.Building s={14} /> {selectedTicket.event_location}
-                </div>
-              </div>
-
-              <div style={{ padding: "1rem", background: "#0b1627", borderRadius: "12px" }}>
-                <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.25rem" }}>Pass Information</div>
-                <div style={{ fontWeight: 700, color: "#fff", marginBottom: "0.5rem" }}>{selectedTicket.pass_number}</div>
-                <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                  <Icon.QR s={16} /> QR Code:
-                </div>
-                <div style={{ background: "#f0f0f0", padding: "0.5rem", borderRadius: "8px", textAlign: "center" }}>
-                  {selectedTicket.qr_code ? (
-                    <img src={selectedTicket.qr_code} alt="QR Code" style={{ maxWidth: "150px" }} />
-                  ) : (
-                    <span style={{ color: "#64748b" }}>QR code pending generation...</span>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ padding: "1rem", background: "#0b1627", borderRadius: "12px" }}>
-                <div style={{ fontSize: "0.85rem", color: "#94a3b8", marginBottom: "0.5rem" }}>Additional Info</div>
-                {selectedTicket.organization && (
-                  <div style={{ fontSize: "0.9rem", color: "#fff", marginBottom: "0.25rem" }}>
-                    <span style={{ color: "#94a3b8" }}>Organization:</span> {selectedTicket.organization}
-                  </div>
-                )}
-                {selectedTicket.designation && (
-                  <div style={{ fontSize: "0.9rem", color: "#fff", marginBottom: "0.25rem" }}>
-                    <span style={{ color: "#94a3b8" }}>Designation:</span> {selectedTicket.designation}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem" }}>
-              <button
-                onClick={() => setShowPreview(false)}
-                style={{
-                  flex: 1,
-                  padding: "0.75rem",
-                  borderRadius: "12px",
-                  border: "1px solid #334155",
-                  background: "transparent",
-                  color: "#fff",
-                  fontWeight: 600,
-                  cursor: "pointer"
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Hidden Render Area for Tickets */}
+      <div style={{ position: "fixed", top: "-9999px", left: "-9999px", pointerEvents: "none", zIndex: -1 }}>
+        {tickets.map(ticket => (
+          <TicketRenderer 
+            key={ticket.ticket_id} 
+            config={templates[ticket.event_id] || TEMPLATES.classic} 
+            ticket={ticket} 
+            ticketRef={(el) => ticketRefs.current[ticket.ticket_id] = el} 
+          />
+        ))}
+      </div>
     </div>
   );
-}
+};
 
 export default TicketManagement;

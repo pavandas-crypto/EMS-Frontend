@@ -128,12 +128,31 @@ export const api = {
     apiCall(`/tickets/${ticketId}`, { method: 'DELETE' }),
 
   // Images
-  uploadImage: (imageData, fileName, altText = '') => apiCall('/images/upload', {
+  uploadImage: (imageData) => apiCall('/images/upload', {
     method: 'POST',
-    body: JSON.stringify({ imageData, fileName, altText }),
+    body: JSON.stringify(imageData),
   }),
   getImage: (imageId) => apiCall(`/images/${imageId}`),
   deleteImage: (imageId) => apiCall(`/images/${imageId}`, { method: 'DELETE' }),
+
+  // Sponsors
+  getEventSponsors: (eventId) => apiCall(`/sponsors/event/${eventId}`),
+  getTemplateSponsors: (templateId) => apiCall(`/sponsors/template/${templateId}`),
+  addSponsor: (sponsorData) => apiCall('/sponsors', {
+    method: 'POST',
+    body: JSON.stringify(sponsorData),
+  }),
+  updateSponsor: (sponsorId, sponsorData) => apiCall(`/sponsors/${sponsorId}`, {
+    method: 'PUT',
+    body: JSON.stringify(sponsorData),
+  }),
+  deleteSponsor: (sponsorId) => apiCall(`/sponsors/${sponsorId}`, { 
+    method: 'DELETE' 
+  }),
+  reorderSponsors: (sponsors) => apiCall('/sponsors/reorder/all', {
+    method: 'PUT',
+    body: JSON.stringify({ sponsors }),
+  }),
 };
 
 export default api;
