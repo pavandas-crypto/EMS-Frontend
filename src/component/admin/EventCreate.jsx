@@ -37,9 +37,11 @@ function EventCreate() {
     name: "",
     email: "",
     phone: "",
+    country: "India",
     role: "Event Organizer",
     image: "",
   });
+  const [organizerErrors, setOrganizerErrors] = useState({});
   const [registrationFields, setRegistrationFields] = useState([
     { id: "participant_name", label: "Participant Name", type: "text", required: true, order: 1 },
     { id: "designation", label: "Designation", type: "text", required: false, order: 2 },
@@ -58,6 +60,7 @@ function EventCreate() {
   const [draftEvent, setDraftEvent] = useState(null);
   const [loadingDraft, setLoadingDraft] = useState(true);
   const [showingDraft, setShowingDraft] = useState(false);
+  const [publishedFromDraft, setPublishedFromDraft] = useState(false);
 
   const steps = [
     { id: "event-details", label: "Event Details" },
@@ -158,10 +161,44 @@ function EventCreate() {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
+  const validatePhoneNumber = (phoneNumber, country) => {
+    // Remove all non-digit characters for validation
+    const digitsOnly = phoneNumber.replace(/\D/g, "");
+    
+    if (phoneNumber.trim() === "") {
+      return { valid: true, error: "" };
+    }
+    
+    if (country === "India") {
+      if (digitsOnly.length !== 10) {
+        return { valid: false, error: "Indian phone number must be exactly 10 digits" };
+      }
+      if (!/^[6-9]/.test(digitsOnly)) {
+        return { valid: false, error: "Indian phone number must start with 6, 7, 8, or 9" };
+      }
+    } else if (country === "USA") {
+      if (digitsOnly.length !== 10) {
+        return { valid: false, error: "USA phone number must be exactly 10 digits" };
+      }
+    }
+    
+    return { valid: true, error: "" };
+  };
+
   const handleOrganizerChange = (event) => {
     const { name, value } = event.target;
-    setOrganizer((prev) => ({ ...prev, [name]: value }));
+    const newOrganizer = { ...organizer, [name]: value };
+    setOrganizer(newOrganizer);
     setStatus({ type: "", message: "", eventId: "" });
+    
+    // Validate phone number if phone or country changed
+    if (name === "phone" || name === "country") {
+      const validation = validatePhoneNumber(newOrganizer.phone, newOrganizer.country);
+      setOrganizerErrors((prev) => ({
+        ...prev,
+        phone: validation.error,
+      }));
+    }
   };
 
   const handleImageChange = (event) => {
@@ -463,6 +500,7 @@ function EventCreate() {
         const landingPageUrl = `/event/${eventId}`;
         
         setCreatedEventId(eventId);
+        setPublishedFromDraft(true);
         setShowSuccessPopup(true);
         setDraftEvent(null);
         setShowingDraft(false);
@@ -599,13 +637,16 @@ function EventCreate() {
       name: "",
       email: "",
       phone: "",
+      country: "India",
       role: "Event Organizer",
       image: "",
     });
+    setOrganizerErrors({});
     setRegistrationFields([]);
     setSuccessPageConfig(null);
     setStatus({ type: "", message: "", eventId: "", landingPageUrl: "" });
     setCreatedEventId(null);
+    setPublishedFromDraft(false);
     setActiveTab("event-details");
   };
 
@@ -1174,17 +1215,34 @@ function EventCreate() {
                     </div>
 
                     <div className="form-group">
+                      <label htmlFor="organizer-country" className="form-label">
+                        Country
+                      </label>
+                      <select
+                        id="organizer-country"
+                        name="country"
+                        value={organizer.country}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                      >
+                        <option value="India">India</option>
+                        <option value="USA">USA</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
                       <label htmlFor="organizer-phone" className="form-label">
-                        Phone
+                        Phone ({organizer.country} - 10 digits)
                       </label>
                       <input
                         id="organizer-phone"
                         name="phone"
                         value={organizer.phone}
                         onChange={handleOrganizerChange}
-                        className="input-field"
-                        placeholder="+1 (555) 000-0000"
+                        className={`input-field ${organizerErrors.phone ? "input-error" : ""}`}
+                        placeholder={organizer.country === "India" ? "9876543210" : "2025551234"}
                       />
+                      {organizerErrors.phone && <div className="field-error" style={{ color: "#dc2626", fontSize: "0.875rem", marginTop: "0.25rem" }}>{organizerErrors.phone}</div>}
                     </div>
                   </div>
                 </div>
@@ -1200,7 +1258,6 @@ function EventCreate() {
                 initialFields={registrationFields}
                 onSave={(fields) => {
                   setRegistrationFields(fields);
-                  setStatus({ type: "success", message: "Registration form fields saved successfully!" });
                 }}
               />
             </>
@@ -1357,9 +1414,12 @@ function EventCreate() {
               </div>
             </div>
 
-            <h2 className="success-title">Event Created!</h2>
+            <h2 className="success-title">{publishedFromDraft ? 'Event Published!' : 'Event Created!'}</h2>
             <p className="success-message">
-              Your event <strong>"{formData.title}"</strong> has been successfully created and is now live.
+              {publishedFromDraft 
+                ? <>Your event <strong>"{formData.title}"</strong> is now live and ready to accept registrations!</>
+                : <>Your event <strong>"{formData.title}"</strong> has been successfully created and is now live.</>
+              }
             </p>
 
             <div className="success-actions-vertical">

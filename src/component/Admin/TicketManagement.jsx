@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import api from "../../api/api";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { TEMPLATES } from "./TicketDesigner";
 import { QRCodeCanvas } from "qrcode.react";
 
@@ -24,7 +26,7 @@ const TicketRenderer = ({ config, ticket, ticketRef }) => {
       style={{ 
         width: "350px", 
         height: "650px", 
-        borderRadius: "40px", 
+        borderRadius: "0", 
         position: "relative", 
         overflow: "hidden",
         background: config?.backgroundType === "solid" ? (config?.primary || "#111") : `linear-gradient(${config?.gradientAngle || 0}deg, ${config?.gradientStart || "#000"}, ${config?.gradientEnd || "#111"})`,
@@ -34,14 +36,18 @@ const TicketRenderer = ({ config, ticket, ticketRef }) => {
       }}
     >
       {/* Header: Event Name */}
+      {(config?.selectedFields || []).includes("event_name") && (
       <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("event_name"), width: 270, textAlign: "center", fontSize: "1.8rem", fontWeight: 900, letterSpacing: "-1px" }}>
         {ticket.event_name}
       </div>
+      )}
 
       {/* PASS Label */}
+      {(config?.selectedFields || []).includes("ticket_id") && (
       <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("pass_label"), width: 70, textAlign: "center", opacity: 0.6, fontSize: "0.8rem", fontWeight: 700, letterSpacing: "2px" }}>
         PASS
       </div>
+      )}
 
       {/* Avatar Circle */}
       <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("avatar"), width: 150, height: 150, borderRadius: "50%", border: "4px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -49,45 +55,73 @@ const TicketRenderer = ({ config, ticket, ticketRef }) => {
       </div>
 
       {/* Participant Details */}
+      {(config?.selectedFields || []).includes("participant_name") && (
       <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("participant_name"), width: 270, textAlign: "center", fontSize: "1.4rem", fontWeight: 800 }}>
         {ticket.participant_name}
       </div>
+      )}
 
+      {(config?.selectedFields || []).includes("organization") && (
       <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("org_desig"), width: 270, textAlign: "center", opacity: 0.7, fontSize: "0.85rem", fontWeight: 500 }}>
         {ticket.designation || "Participant"} {ticket.organization ? `• ${ticket.organization}` : ""}
       </div>
+      )}
 
       {/* Address & Date/Time Section */}
+      {(config?.selectedFields || []).includes("event_location") && (
       <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("event_address"), width: 270, textAlign: "left", fontSize: "0.85rem" }}>
         <div style={{ opacity: 0.5, fontSize: "0.7rem", marginBottom: "4px" }}>Event Address</div>
         {ticket.address || "TBA"}
       </div>
+      )}
 
+      {((config?.selectedFields || []).includes("event_date") || (config?.selectedFields || []).includes("event_time")) && (
       <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("date_time"), width: 270, display: "flex", gap: "2rem" }}>
+        {(config?.selectedFields || []).includes("event_date") && (
         <div>
           <div style={{ opacity: 0.5, fontSize: "0.7rem", marginBottom: "4px" }}>Date</div>
           <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{formatDate(ticket.start_date_time)}</div>
         </div>
-        <div style={{ borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: "1.5rem" }}>
+        )}
+        {(config?.selectedFields || []).includes("event_time") && (
+        <div style={{ borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: (config?.selectedFields || []).includes("event_date") ? "1.5rem" : "0" }}>
           <div style={{ opacity: 0.5, fontSize: "0.7rem", marginBottom: "4px" }}>Time</div>
           <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{formatTime(ticket.start_date_time)}</div>
         </div>
+        )}
       </div>
+      )}
 
-      {/* Bottom Bar: PassCode & QR Code */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 160, background: "rgba(255,255,255,0.03)", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", padding: "0 20px" }}>
-        <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("pass_code") }}>
-          <div style={{ transform: "rotate(-90deg)", opacity: 0.3, fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap" }}>
-            {ticket.pass_number}
-          </div>
-        </div>
-        
-        <div style={{ flex: 1 }} />
+      {config?.customText?.sponsorText && (
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("sponsor_text") || "translate(100px, 340px)", width: 150, textAlign: "center", opacity: 0.8, fontSize: "0.85rem", fontWeight: 600 }}>
+        {config.customText.sponsorText}
+      </div>
+      )}
 
-        <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("qr_code"), width: 100, height: 100, background: "#fff", padding: "8px", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
-          <QRCodeCanvas value={ticket.qr_code || JSON.stringify({ pass_number: ticket.pass_number, ticket_id: ticket.ticket_id })} size={84} />
+      {config?.logo && (
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("sponsor_logo") || "translate(145px, 370px)", width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src={config.logo} alt="Sponsor Logo" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+      </div>
+      )}
+
+      {/* Bottom Bar Background ONLY */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 160, background: "rgba(255,255,255,0.03)", borderTop: "1px solid rgba(255,255,255,0.05)" }} />
+
+      {(config?.selectedFields || []).includes("ticket_id") && (
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("pass_code") }}>
+        <div style={{ transform: `rotate(${config.passRotation ?? -90}deg)`, opacity: 0.3, fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+          {ticket.pass_number}
         </div>
       </div>
+      )}
+      
+      {(config?.selectedFields || []).includes("qr_code") && (
+      <div style={{ position: "absolute", zIndex: 10, transform: getPosTransform("qr_code") }}>
+        <div style={{ transform: `rotate(${config.qrRotation || 0}deg)`, width: (config.qrSize || 84) + 16, height: (config.qrSize || 84) + 16, background: "#fff", padding: "8px", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <QRCodeCanvas value={ticket.qr_code || JSON.stringify({ pass_number: ticket.pass_number, ticket_id: ticket.ticket_id })} size={config.qrSize || 84} />
+        </div>
+      </div>
+      )}
     </div>
   );
 };
@@ -98,6 +132,8 @@ const TicketManagement = () => {
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
+  const [pageSize, setPageSize] = useState(10);
+  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
   const [templates, setTemplates] = useState({});
   const [downloading, setDownloading] = useState(false);
   const ticketRefs = useRef({});
@@ -109,7 +145,7 @@ const TicketManagement = () => {
 
   useEffect(() => {
     fetchTickets();
-  }, [selectedEventId, pagination.page]);
+  }, [selectedEventId, pagination.page, pageSize, sortConfig]);
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -121,7 +157,11 @@ const TicketManagement = () => {
           try {
             const res = await api.getTicketTemplate(id);
             if (res.success && res.data) {
-              newTemplates[id] = res.data.config;
+              newTemplates[id] = { 
+                ...res.data.config, 
+                customText: res.data.custom_text, 
+                logo: res.data.logo 
+              };
               changed = true;
             }
           } catch (e) {
@@ -144,9 +184,10 @@ const TicketManagement = () => {
   const fetchTickets = async () => {
     setLoading(true);
     try {
+      const { key, direction } = sortConfig;
       const res = selectedEventId 
-        ? await api.getEventTickets(selectedEventId, pagination.page)
-        : await api.getAllTickets(pagination.page);
+        ? await api.getEventTickets(selectedEventId, pagination.page, pageSize, key, direction)
+        : await api.getAllTickets(pagination.page, pageSize, key, direction);
       
       if (res.success) {
         setTickets(res.data || []);
@@ -154,6 +195,30 @@ const TicketManagement = () => {
       }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
+  };
+
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const SortIcon = ({ column }) => {
+    const isActive = sortConfig.key === column;
+    const isAsc = sortConfig.direction === 'asc';
+    
+    return (
+      <svg 
+        width="12" height="12" viewBox="0 0 24 24" fill="none" 
+        stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+        style={{ marginLeft: '8px', opacity: isActive ? 1 : 0.3, transition: 'all 0.2s', transform: (isActive && !isAsc) ? 'rotate(180deg)' : 'none' }}
+      >
+        <path d="M12 5v14M5 12l7-7 7 7"/>
+      </svg>
+    );
   };
 
   const handleDelete = async (ticketId) => {
@@ -174,12 +239,15 @@ const TicketManagement = () => {
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [350, 650] });
+      pdf.addImage(imgData, "PNG", 0, 0, 350, 650);
+      
       const eventName = tickets.find(t => t.ticket_id === ticketId)?.event_name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "event";
       const participantName = tickets.find(t => t.ticket_id === ticketId)?.participant_name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "participant";
-      pdf.save(`ticket_${eventName}_${participantName}.pdf`);
+      const passNumber = tickets.find(t => t.ticket_id === ticketId)?.pass_number || "pass";
+      pdf.save(`Ticket_${passNumber}_${participantName}.pdf`);
       
       // Update download status optionally
-      await api.updateTicketStatus(ticketId, { is_downloaded: true });
+      await api.markTicketDownloaded(ticketId);
       setTickets(tickets.map(t => t.ticket_id === ticketId ? { ...t, is_downloaded: true } : t));
     } catch (err) {
       console.error("Download failed", err);
@@ -193,24 +261,30 @@ const TicketManagement = () => {
     if (tickets.length === 0) return;
     setDownloading(true);
     try {
-      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [350, 650] });
+      const zip = new JSZip();
       for (let i = 0; i < tickets.length; i++) {
         const ticketId = tickets[i].ticket_id;
         const el = ticketRefs.current[ticketId];
         if (el) {
           const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
           const imgData = canvas.toDataURL("image/png");
+          const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [350, 650] });
           pdf.addImage(imgData, "PNG", 0, 0, 350, 650);
-          if (i < tickets.length - 1) pdf.addPage();
+          
+          const participantName = tickets[i].participant_name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "participant";
+          const passNumber = tickets[i].pass_number || "pass";
+          
+          zip.file(`Ticket_${passNumber}_${participantName}.pdf`, pdf.output('blob'));
         }
       }
       const eventName = events.find(e => e.event_id.toString() === selectedEventId)?.event_name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || "all_events";
-      pdf.save(`bulk_tickets_${eventName}.pdf`);
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `bulk_tickets_${eventName}.zip`);
       
       // Optionally update status for all
       for (let t of tickets) {
         if (!t.is_downloaded) {
-            await api.updateTicketStatus(t.ticket_id, { is_downloaded: true });
+            await api.markTicketDownloaded(t.ticket_id);
         }
       }
       fetchTickets();
@@ -257,10 +331,30 @@ const TicketManagement = () => {
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ background: "#1e1e1e", borderBottom: "1px solid #333" }}>
-                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Pass Number</th>
-                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Participant</th>
-                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Event</th>
-                <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase" }}>Status</th>
+                <th 
+                  onClick={() => handleSort('pass_number')}
+                  style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    Pass Number <SortIcon column="pass_number" />
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('participant_name')}
+                  style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    Participant <SortIcon column="participant_name" />
+                  </div>
+                </th>
+                <th 
+                  onClick={() => handleSort('event_name')}
+                  style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", cursor: 'pointer', userSelect: 'none' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    Event <SortIcon column="event_name" />
+                  </div>
+                </th>
                 <th style={{ padding: "1.25rem", color: "#888", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
@@ -281,16 +375,6 @@ const TicketManagement = () => {
                     </td>
                     <td style={{ padding: "1.25rem" }}>
                       <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>{ticket.event_name}</div>
-                    </td>
-                    <td style={{ padding: "1.25rem" }}>
-                      <span style={{ 
-                        padding: "4px 10px", borderRadius: "4px", fontSize: "0.7rem", fontWeight: 800,
-                        background: ticket.is_downloaded ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)",
-                        color: ticket.is_downloaded ? "#10b981" : "#f59e0b",
-                        border: `1px solid ${ticket.is_downloaded ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)"}`
-                      }}>
-                        {ticket.is_downloaded ? "DOWNLOADED" : "PENDING"}
-                      </span>
                     </td>
                     <td style={{ padding: "1.25rem", textAlign: "right" }}>
                       <button 
@@ -315,27 +399,48 @@ const TicketManagement = () => {
         </div>
       </div>
 
-      {pagination.totalPages > 1 && (
-        <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "center", gap: "0.5rem" }}>
-          {Array.from({ length: pagination.totalPages }).map((_, i) => (
-            <button 
-              key={i}
-              onClick={() => setPagination({ ...pagination, page: i + 1 })}
-              style={{ 
-                width: "36px", height: "36px", borderRadius: "8px", border: "1px solid #333",
-                background: pagination.page === i + 1 ? "#6366f1" : "#121212",
-                color: "#fff",
-                fontWeight: 700, cursor: "pointer"
-              }}
-            >
-              {i + 1}
-            </button>
-          ))}
+      <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <span style={{ fontSize: "0.85rem", color: "#888" }}>Rows per page:</span>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {[10, 25, 50].map(size => (
+              <button
+                key={size}
+                onClick={() => { setPageSize(size); setPagination({ ...pagination, page: 1 }); }}
+                style={{
+                  padding: "4px 10px", borderRadius: "6px", border: "1px solid #333",
+                  background: pageSize === size ? "#6366f1" : "#121212",
+                  color: "#fff", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer"
+                }}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+
+        {pagination.totalPages > 1 && (
+          <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem" }}>
+            {Array.from({ length: pagination.totalPages }).map((_, i) => (
+              <button 
+                key={i}
+                onClick={() => setPagination({ ...pagination, page: i + 1 })}
+                style={{ 
+                  width: "36px", height: "36px", borderRadius: "8px", border: "1px solid #333",
+                  background: pagination.page === i + 1 ? "#6366f1" : "#121212",
+                  color: "#fff",
+                  fontWeight: 700, cursor: "pointer"
+                }}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Hidden Render Area for Tickets */}
-      <div style={{ position: "fixed", top: "-9999px", left: "-9999px", pointerEvents: "none", zIndex: -1 }}>
+      <div style={{ position: "absolute", top: "-9999px", left: "-9999px", zIndex: -1 }}>
         {tickets.map(ticket => (
           <TicketRenderer 
             key={ticket.ticket_id} 

@@ -61,17 +61,32 @@ export default function Login() {
       });
 
       if (data.success) {
+        const userRole = data.data.user.role.toLowerCase();
+        
+        // Role Validation
+        if (!isVerifier && userRole !== 'admin') {
+          setApiErr("Access Denied: You do not have administrative privileges.");
+          setLoading(false);
+          return;
+        }
+
+        if (isVerifier && userRole !== 'verifier' && userRole !== 'admin') {
+          setApiErr("Access Denied: You do not have verifier privileges.");
+          setLoading(false);
+          return;
+        }
+
         // Store token and user data in localStorage
         localStorage.setItem("token", data.data.token);
         localStorage.setItem("user", JSON.stringify(data.data.user));
-        localStorage.setItem("userRole", isVerifier ? "verifier" : "admin");
+        localStorage.setItem("userRole", data.data.user.role);
         
         // Create session cookie
         const expiryDate = new Date();
         expiryDate.setTime(expiryDate.getTime() + (24 * 60 * 60 * 1000)); // 24 hours
         const expires = "expires=" + expiryDate.toUTCString();
         document.cookie = `emsSession=${data.data.token}; ${expires}; path=/`;
-        document.cookie = `emsUserRole=${isVerifier ? "verifier" : "admin"}; ${expires}; path=/`;
+        document.cookie = `emsUserRole=${data.data.user.role}; ${expires}; path=/`;
         
         navigate(isVerifier ? "/verifier" : "/admin/dashboard");
       }

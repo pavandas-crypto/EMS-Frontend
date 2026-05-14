@@ -367,6 +367,24 @@ const TicketDesigner = () => {
           </div>
         </div>
 
+        <div>
+          <label style={{ display: "block", fontSize: "0.75rem", color: "#888", marginBottom: "8px", textTransform: "uppercase", fontWeight: 700 }}>Element Properties</label>
+          <div style={{ display: "grid", gap: "10px", background: "#1e1e1e", padding: "10px", borderRadius: "8px", border: "1px solid #333" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "0.7rem", color: "#ccc" }}>QR Size ({customConfig.qrSize || 84}px)</span>
+              <input type="range" min="40" max="200" value={customConfig.qrSize || 84} onChange={(e) => setCustomConfig(p => ({ ...p, qrSize: parseInt(e.target.value) }))} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "0.7rem", color: "#ccc" }}>QR Rotation ({customConfig.qrRotation || 0}°)</span>
+              <input type="range" min="-180" max="180" value={customConfig.qrRotation || 0} onChange={(e) => setCustomConfig(p => ({ ...p, qrRotation: parseInt(e.target.value) }))} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "0.7rem", color: "#ccc" }}>Pass Rotation ({customConfig.passRotation ?? -90}°)</span>
+              <input type="range" min="-180" max="180" value={customConfig.passRotation ?? -90} onChange={(e) => setCustomConfig(p => ({ ...p, passRotation: parseInt(e.target.value) }))} />
+            </div>
+          </div>
+        </div>
+
         <div style={{ marginTop: "auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", paddingTop: "1rem", borderTop: "1px solid #333" }}>
           <button 
             onClick={handleSave} 
@@ -394,7 +412,7 @@ const TicketDesigner = () => {
             style={{ 
               width: "350px", 
               height: "650px", 
-              borderRadius: "40px", 
+              borderRadius: "0", 
               position: "relative", 
               overflow: "hidden",
               background: customConfig.backgroundType === "solid" ? (customConfig.primary || "#111") : `linear-gradient(${customConfig.gradientAngle || 0}deg, ${customConfig.gradientStart || "#000"}, ${customConfig.gradientEnd || "#111"})`,
@@ -489,26 +507,24 @@ const TicketDesigner = () => {
             </DraggableItem>
             )}
 
-            {/* Bottom Bar: PassCode & QR Code */}
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 160, background: customConfig.backgroundType === "solid" && customConfig.primary === "#ffffff" ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", borderTop: customConfig.backgroundType === "solid" && customConfig.primary === "#ffffff" ? "1px solid rgba(0,0,0,0.05)" : "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", padding: "0 20px" }}>
-              {(customConfig.selectedFields || []).includes("ticket_id") && (
-              <DraggableItem position={getPos("pass_code")} onDrag={(e, d) => handlePositionChange("pass_code", d.x, d.y)} bounds="parent">
-                <div style={{ transform: "rotate(-90deg)", color: customConfig.accent || "#fff", opacity: 0.8, fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap" }}>
-                  {fieldValues.pass_number}
-                </div>
-              </DraggableItem>
-              )}
-              
-              <div style={{ flex: 1 }} />
+            {/* Bottom Bar Background ONLY */}
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 160, background: customConfig.backgroundType === "solid" && customConfig.primary === "#ffffff" ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)", borderTop: customConfig.backgroundType === "solid" && customConfig.primary === "#ffffff" ? "1px solid rgba(0,0,0,0.05)" : "1px solid rgba(255,255,255,0.05)" }} />
+            
+            {(customConfig.selectedFields || []).includes("ticket_id") && (
+            <DraggableItem position={getPos("pass_code")} onDrag={(e, d) => handlePositionChange("pass_code", d.x, d.y)} bounds="parent">
+              <div style={{ transform: `rotate(${customConfig.passRotation ?? -90}deg)`, color: customConfig.accent || "#fff", opacity: 0.8, fontSize: "0.8rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                {fieldValues.pass_number}
+              </div>
+            </DraggableItem>
+            )}
 
-              {(customConfig.selectedFields || []).includes("qr_code") && (
-              <DraggableItem position={getPos("qr_code")} onDrag={(e, d) => handlePositionChange("qr_code", d.x, d.y)} bounds="parent">
-                <div style={{ width: 100, height: 100, background: "#fff", padding: "8px", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", border: `2px solid ${(customConfig.accent || "#fff")}44` }}>
-                  <QRCodeCanvas value={demoQrCode} size={84} />
-                </div>
-              </DraggableItem>
-              )}
-            </div>
+            {(customConfig.selectedFields || []).includes("qr_code") && (
+            <DraggableItem position={getPos("qr_code")} onDrag={(e, d) => handlePositionChange("qr_code", d.x, d.y)} bounds="parent">
+              <div style={{ transform: `rotate(${customConfig.qrRotation || 0}deg)`, width: (customConfig.qrSize || 84) + 16, height: (customConfig.qrSize || 84) + 16, background: "#fff", padding: "8px", borderRadius: "12px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)", border: `2px solid ${(customConfig.accent || "#fff")}44`, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                <QRCodeCanvas value={demoQrCode} size={customConfig.qrSize || 84} />
+              </div>
+            </DraggableItem>
+            )}
           </div>
         </div>
       </div>

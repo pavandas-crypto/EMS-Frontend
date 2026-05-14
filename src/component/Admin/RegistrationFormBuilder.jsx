@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function RegistrationFormBuilder({ onSave, initialFields }) {
   const DEFAULT_FIELDS = [
@@ -14,6 +14,12 @@ export default function RegistrationFormBuilder({ onSave, initialFields }) {
   const [fields, setFields] = useState(initialFields && initialFields.length > 0 ? initialFields : DEFAULT_FIELDS);
   const [newField, setNewField] = useState({ label: "", type: "text", required: false });
   const [showAddField, setShowAddField] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Sync fields changes to parent automatically
+  useEffect(() => {
+    onSave(fields);
+  }, [fields]);
 
   const updateField = (id, updates) => {
     setFields(fields.map((f) => (f.id === id ? { ...f, ...updates } : f)));
@@ -58,15 +64,22 @@ export default function RegistrationFormBuilder({ onSave, initialFields }) {
     }
   };
 
-  const handleSave = () => {
-    onSave(fields);
-  };
-
   return (
     <div className="rfb-container">
       <div className="rfb-header">
-        <h3 className="rfb-title">Registration Form Fields</h3>
-        <p className="rfb-subtitle">Customize which fields participants must fill out</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h3 className="rfb-title">Registration Form Fields</h3>
+            <p className="rfb-subtitle">Customize which fields participants must fill out</p>
+          </div>
+          {saved && (
+            <span style={{
+              fontSize: '12px', fontWeight: 600, color: '#16a34a',
+              background: '#dcfce7', border: '1px solid #bbf7d0',
+              padding: '4px 10px', borderRadius: 6, whiteSpace: 'nowrap'
+            }}>✓ Changes saved</span>
+          )}
+        </div>
       </div>
 
       <div className="rfb-fields-list">

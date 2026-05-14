@@ -741,7 +741,7 @@ export default function Report() {
         }
         .rp-table tbody tr:last-child td { border-bottom: none; }
         .rp-table tbody tr:hover td { background: #fffdf0; }
-        .rp-td-num { color: #d1d5db; font-size: 12px; font-weight: 600; width: 36px; }
+        .rp-td-num { color: #d1d5db; font-size: 12px; font-weight: 600; width: 50px; white-space: nowrap; }
         .rp-tc { text-align: center; }
 
         /* Person */

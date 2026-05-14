@@ -33,9 +33,11 @@ function EventEdit() {
     name: "",
     email: "",
     phone: "",
+    country: "India",
     role: "Event Organizer",
     image: "",
   });
+  const [organizerErrors, setOrganizerErrors] = useState({});
   const [registrationFields, setRegistrationFields] = useState([
     { id: "participant_name", label: "Participant Name", type: "text", required: true, order: 1 },
     { id: "designation", label: "Designation", type: "text", required: false, order: 2 },
@@ -100,6 +102,7 @@ function EventEdit() {
             name: e.organizer_name || "",
             email: e.organizer_email || "",
             phone: e.organizer_phone || "",
+            country: "India",
             role: e.organizer_role || "Event Organizer",
             image: "",
           });
@@ -134,48 +137,28 @@ function EventEdit() {
     return `${hours.toString().padStart(2, '0')}:${minutes}`;
   };
 
-  const steps = [
-    { id: "event-details", label: "Event Details" },
-    { id: "registration-form", label: "Registration Form" },
-    { id: "success-page", label: "Success Page" }
-  ];
-
-  const currentStepIndex = steps.findIndex(step => step.id === activeTab);
-
-  const handleNext = () => {
-    if (currentStepIndex < steps.length - 1) {
-      if (activeTab === "event-details") {
-        const nextErrors = {};
-        if (!formData.title.trim()) nextErrors.title = "Event title is required.";
-        if (!formData.description.trim()) nextErrors.description = "Event description is required.";
-        if (!formData.startDate) nextErrors.startDate = "Start date is required.";
-        if (!formData.endDate) nextErrors.endDate = "End date is required.";
-        
-        if (formData.startDate && formData.endDate) {
-          const startDT = new Date(`${formData.startDate}T${convertTo24Hour(formData.startTime, formData.startPeriod)}:00`);
-          const endDT = new Date(`${formData.endDate}T${convertTo24Hour(formData.endTime, formData.endPeriod)}:00`);
-          
-          if (endDT <= startDT) {
-            nextErrors.endDate = "End date and time must be later than start date and time.";
-          }
-        }
-
-        if (!formData.location.trim()) nextErrors.location = "Location is required.";
-        setErrors(nextErrors);
-        if (Object.keys(nextErrors).length > 0) {
-          setStatus({ type: "error", message: "Please complete all required fields." });
-          return;
-        }
+  const validatePhoneNumber = (phoneNumber, country) => {
+    // Remove all non-digit characters for validation
+    const digitsOnly = phoneNumber.replace(/\D/g, "");
+    
+    if (phoneNumber.trim() === "") {
+      return { valid: true, error: "" };
+    }
+    
+    if (country === "India") {
+      if (digitsOnly.length !== 10) {
+        return { valid: false, error: "Indian phone number must be exactly 10 digits" };
       }
-      setActiveTab(steps[currentStepIndex + 1].id);
-      setStatus({ type: "", message: "" });
+      if (!/^[6-9]/.test(digitsOnly)) {
+        return { valid: false, error: "Indian phone number must start with 6, 7, 8, or 9" };
+      }
+    } else if (country === "USA") {
+      if (digitsOnly.length !== 10) {
+        return { valid: false, error: "USA phone number must be exactly 10 digits" };
+      }
     }
-  };
-
-  const handlePrevious = () => {
-    if (currentStepIndex > 0) {
-      setActiveTab(steps[currentStepIndex - 1].id);
-    }
+    
+    return { valid: true, error: "" };
   };
 
   const handleChange = (event) => {
@@ -186,7 +169,17 @@ function EventEdit() {
 
   const handleOrganizerChange = (event) => {
     const { name, value } = event.target;
-    setOrganizer((prev) => ({ ...prev, [name]: value }));
+    const newOrganizer = { ...organizer, [name]: value };
+    setOrganizer(newOrganizer);
+    
+    // Validate phone number if phone or country changed
+    if (name === "phone" || name === "country") {
+      const validation = validatePhoneNumber(newOrganizer.phone, newOrganizer.country);
+      setOrganizerErrors((prev) => ({
+        ...prev,
+        phone: validation.error,
+      }));
+    }
   };
 
   const handleImageChange = (event) => {
@@ -712,17 +705,34 @@ function EventEdit() {
                     </div>
 
                     <div className="form-group">
+                      <label htmlFor="organizer-country" className="form-label">
+                        Country
+                      </label>
+                      <select
+                        id="organizer-country"
+                        name="country"
+                        value={organizer.country}
+                        onChange={handleOrganizerChange}
+                        className="input-field"
+                      >
+                        <option value="India">India</option>
+                        <option value="USA">USA</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
                       <label htmlFor="organizer-phone" className="form-label">
-                        Phone
+                        Phone ({organizer.country} - 10 digits)
                       </label>
                       <input
                         id="organizer-phone"
                         name="phone"
                         value={organizer.phone}
                         onChange={handleOrganizerChange}
-                        className="input-field"
-                        placeholder="+1 (555) 000-0000"
+                        className={`input-field ${organizerErrors.phone ? "input-error" : ""}`}
+                        placeholder={organizer.country === "India" ? "9876543210" : "2025551234"}
                       />
+                      {organizerErrors.phone && <div className="field-error" style={{ color: "#dc2626", fontSize: "0.875rem", marginTop: "0.25rem" }}>{organizerErrors.phone}</div>}
                     </div>
                   </div>
                 </div>

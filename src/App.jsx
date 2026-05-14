@@ -12,9 +12,9 @@ import EventEdit from "./component/Admin/EventEdit.jsx";
 import EventManage from "./component/Admin/EventMag.jsx";
 import Registrations from "./component/Admin/Registrations.jsx";
 import TicketPage from "./component/Admin/TicketPage.jsx";
-
 import Verifiers from "./component/Admin/Verifiers.jsx";
 import Report from "./component/Admin/Report.jsx";
+import NotFound from "./component/NotFound.jsx";
 import { ProtectedVerifierRoute, ProtectedAdminOnlyRoute } from "./utils/ProtectedRoute.jsx";
 
 function App() {
@@ -35,11 +35,10 @@ function App() {
           <Route path="events/edit/:eventId" element={<EventEdit />} />
           <Route path="registrations" element={<Registrations />} />
           <Route path="tickets" element={<TicketPage />} />
-
           <Route path="verifiers" element={<Verifiers />} />
           <Route path="reports" element={<Report />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

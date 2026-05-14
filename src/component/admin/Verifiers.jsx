@@ -281,12 +281,20 @@ function Verifiers() {
 
     try {
       if (editingId) {
+        // Update user profile first
+        await api.updateUser(editingId, {
+          name: form.name,
+          email: form.email,
+          username: form.username,
+          password: form.password || undefined // Only send if not empty
+        });
+
         const selectedEventIds = allEventsList
           .filter(e => form.events.includes(e.name))
           .map(e => e.id);
           
         await api.updateVerifierEvents(editingId, selectedEventIds);
-        showToast("Verifier assignments updated.");
+        showToast("Verifier updated successfully.");
       } else {
         const response = await api.register({
           name: form.name,

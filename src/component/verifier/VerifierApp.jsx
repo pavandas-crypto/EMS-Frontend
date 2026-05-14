@@ -31,25 +31,30 @@ function VerifierApp() {
           setLoading(false);
         }
       } else {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          try {
-            const user = JSON.parse(storedUser);
-            setAssignedEvents(user.assigned_events || []);
-          } catch (e) {
-            console.error('Error parsing user data:', e);
-            setAssignedEvents([]);
-          }
-        } else {
-          try {
+        try {
+          // First, try to fetch assigned events via dedicated endpoint
+          const assignedResponse = await api.getAssignedEvents();
+          if (assignedResponse.success) {
+            setAssignedEvents(assignedResponse.data || []);
+          } else {
+            // Fallback to profile endpoint if dedicated endpoint fails
             const profile = await api.getProfile();
             if (profile.success) {
               setAssignedEvents(profile.data?.assigned_events || []);
             } else {
               setAssignedEvents([]);
             }
-          } catch (error) {
-            console.error('Error fetching verifier profile:', error);
+          }
+        } catch (error) {
+          console.error('Error fetching verifier events:', error);
+          // Fallback to profile endpoint
+          try {
+            const profile = await api.getProfile();
+            if (profile.success) {
+              setAssignedEvents(profile.data?.assigned_events || []);
+            }
+          } catch (profileError) {
+            console.error('Error fetching profile:', profileError);
             setAssignedEvents([]);
           }
         }
@@ -59,6 +64,29 @@ function VerifierApp() {
 
     loadEvents();
   }, []);
+
+  const handleRefreshEvents = async () => {
+    setLoading(true);
+    try {
+      const response = await api.getAssignedEvents();
+      if (response.success) {
+        setAssignedEvents(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error refreshing events:', error);
+      // Try profile endpoint as fallback
+      try {
+        const profile = await api.getProfile();
+        if (profile.success) {
+          setAssignedEvents(profile.data?.assigned_events || []);
+        }
+      } catch (profileError) {
+        console.error('Error fetching profile:', profileError);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -75,7 +103,7 @@ function VerifierApp() {
   }
 
   if (!selectedEvent) {
-    return <EventSelection userRole={userRole} events={assignedEvents} onEventSelect={setSelectedEvent} onLogout={handleLogout} />;
+    return <EventSelection userRole={userRole} events={assignedEvents} onEventSelect={setSelectedEvent} onLogout={handleLogout} onRefresh={handleRefreshEvents} />;
   }
 
   return <VerifierDashboard selectedEvent={selectedEvent} onBackToSelection={() => setSelectedEvent(null)} onLogout={handleLogout} />;

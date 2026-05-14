@@ -47,6 +47,10 @@ export const api = {
     method: 'PATCH',
     body: JSON.stringify({ eventIds }),
   }),
+  updateUser: (userId, userData) => apiCall(`/auth/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(userData),
+  }),
   deleteUser: (userId) => apiCall(`/auth/users/${userId}`, {
     method: 'DELETE',
   }),
@@ -54,6 +58,7 @@ export const api = {
   // Events
   getEvents: (page = 1, pageSize = 10) => apiCall(`/events?page=${page}&pageSize=${pageSize}`),
   getEvent: (id) => apiCall(`/events/${id}`),
+  getAssignedEvents: () => apiCall('/events/verifier/assigned'),
   createEvent: (eventData) => apiCall('/events', {
     method: 'POST',
     body: JSON.stringify(eventData),
@@ -109,12 +114,12 @@ export const api = {
 
   // Ticket Management
   getTicket: (ticketId) => apiCall(`/tickets/${ticketId}`),
-  getEventTickets: (eventId, page = 1, pageSize = 10) => 
-    apiCall(`/tickets/event/${eventId}?page=${page}&pageSize=${pageSize}`),
+  getEventTickets: (eventId, page = 1, pageSize = 10, sortBy = 'created_at', sortOrder = 'desc') => 
+    apiCall(`/tickets/event/${eventId}?page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortOrder=${sortOrder}`),
   getRegistrationTicket: (registrationId) => 
     apiCall(`/tickets/registration/${registrationId}`),
-  getAllTickets: (page = 1, pageSize = 10) => 
-    apiCall(`/tickets?page=${page}&pageSize=${pageSize}`),
+  getAllTickets: (page = 1, pageSize = 10, sortBy = 'created_at', sortOrder = 'desc') => 
+    apiCall(`/tickets?page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortOrder=${sortOrder}`),
   markTicketDownloaded: (ticketId) => 
     apiCall(`/tickets/${ticketId}/downloaded`, { method: 'PATCH' }),
   markTicketPrinted: (ticketId) => 
@@ -128,9 +133,9 @@ export const api = {
     apiCall(`/tickets/${ticketId}`, { method: 'DELETE' }),
 
   // Images
-  uploadImage: (imageData) => apiCall('/images/upload', {
+  uploadImage: (imageData, fileName, altText) => apiCall('/images/upload', {
     method: 'POST',
-    body: JSON.stringify(imageData),
+    body: JSON.stringify({ imageData, fileName, altText }),
   }),
   getImage: (imageId) => apiCall(`/images/${imageId}`),
   deleteImage: (imageId) => apiCall(`/images/${imageId}`, { method: 'DELETE' }),
