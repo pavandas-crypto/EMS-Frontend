@@ -312,16 +312,25 @@
 
 .v-result {
   width: 100%;
-  max-width: 440px;
-  max-height: 90vh;
+  max-width: 480px;
+  max-height: 85vh;
   border-radius: 24px;
   display: flex;
   flex-direction: column;
   padding: 2.5rem 2rem;
-  overflow: visible;
+  overflow-y: auto;
   animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   color: #ffffff;
   position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+@media (max-width: 480px) {
+  .v-result {
+    padding: 2rem 1.25rem;
+    max-height: 90vh;
+    border-radius: 20px;
+  }
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -349,6 +358,12 @@
   grid-template-columns: 1fr 1fr;
   gap: 0.6rem;
   margin-bottom: 1.5rem;
+}
+
+@media (max-width: 380px) {
+  .v-result-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .v-result-cell {

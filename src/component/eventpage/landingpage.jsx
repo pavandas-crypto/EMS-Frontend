@@ -89,10 +89,7 @@ export default function LandingPage() {
 
     const fetchData = async () => {
       try {
-        const [eventsRes, statsRes] = await Promise.all([
-          api.getEvents(1, 3),
-          api.getStats()
-        ]);
+        const eventsRes = await api.getEvents(1, 3);
         if (eventsRes.success) {
           setEvents(eventsRes.data.map(ev => ({
             id: ev.event_id,
@@ -103,11 +100,18 @@ export default function LandingPage() {
             slots: ev.max_capacity ? ev.max_capacity - (ev.registration_count || 0) : "Open"
           })));
         }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+      }
+
+      try {
+        // Stats might fail for public users if it requires admin auth
+        const statsRes = await api.getStats();
         if (statsRes.success) {
           setStats(statsRes.data.summary);
         }
       } catch (error) {
-        console.error("Error fetching landing page data:", error);
+        console.warn("Stats restricted or unavailable for public users");
       } finally {
         setLoading(false);
       }
@@ -123,8 +127,11 @@ export default function LandingPage() {
       <header className={`lp-nav${scrolled ? " lp-nav--scrolled" : ""}`}>
         <div className="lp-nav__inner">
           <a href="/" className="lp-logo">
-            <span className="lp-logo__icon">E</span>
-            <span className="lp-logo__text">EMS</span>
+            <img 
+              src="/images/tssia logo.png" 
+              alt="TSSIA Logo" 
+              style={{ height: '40px', width: 'auto' }} 
+            />
           </a>
 
           <nav className={`lp-nav__links${menuOpen ? " open" : ""}`}>
@@ -134,6 +141,18 @@ export default function LandingPage() {
           </nav>
 
           <div className="lp-nav__actions">
+            <a
+              href="https://tssia.org/contact-us"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-nav__action-icon"
+              title="Contact Us"
+              style={{ marginRight: '15px', color: 'var(--lp-primary)', display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </a>
             <a href="/login" className="lp-btn lp-btn--ghost">Admin Login</a>
             <a href="/register" className="lp-btn lp-btn--primary">Register Now</a>
           </div>
@@ -321,8 +340,11 @@ export default function LandingPage() {
         <div className="lp-container lp-footer__inner">
           <div className="lp-footer__brand">
             <a href="/" className="lp-logo lp-logo--light">
-              <span className="lp-logo__icon">E</span>
-              <span className="lp-logo__text">EMS</span>
+              <img 
+                src="/images/tssia logo.png" 
+                alt="TSSIA Logo" 
+                style={{ height: '50px', width: 'auto', filter: 'brightness(0) invert(1)' }} 
+              />
             </a>
             <p className="lp-footer__tagline">Streamlining events from discovery to verification.</p>
           </div>

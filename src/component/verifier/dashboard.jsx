@@ -25,7 +25,18 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
   const [editingScan, setEditingScan] = useState(null);
   const [editForm, setEditForm] = useState({});
 
+  const lastScanRef = React.useRef({ code: null, time: 0 });
+
   const processCode = async (code) => {
+    // 3-second cooling period for the same code to prevent accidental double-scans
+    const now = Date.now();
+    if (lastScanRef.current.code === code && (now - lastScanRef.current.time) < 3000) {
+      console.log("Cooling period active for code:", code);
+      return;
+    }
+    
+    lastScanRef.current = { code, time: now };
+
     try {
       const response = await api.scanQRCode({ qr_code: code, event_id: selectedEvent.id });
       
@@ -40,7 +51,8 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
           designation: data.designation,
           organisation: data.organization,
           mobile: data.phone,
-          passNo: data.pass_number
+          passNo: data.pass_number,
+          isMember: !!data.tssia_membership_id
         });
         
         setActivity(prev => [{
@@ -55,19 +67,23 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
             designation: data.designation,
             organisation: data.organization,
             mobile: data.phone,
-            passNo: data.pass_number
+            passNo: data.pass_number,
+            isMember: !!data.tssia_membership_id
           }
         }, ...prev].slice(0, 20));
 
-        if (status === 'valid') playBeep(800, 200);
-        else if (status === 'duplicate') playBeep(600, 300);
+        if (status === 'valid') playBeep(880, 100); 
+        else if (status === 'duplicate') {
+          playBeep(440, 200);
+          setTimeout(() => playBeep(440, 200), 250);
+        }
       }
     } catch (error) {
       console.error("Scan error:", error);
       setUserStatus('invalid');
       const errorMsg = error.message || 'Invalid Code';
       setUserDetails(null);
-      setScanResult(code); // Ensure code is shown even if invalid
+      setScanResult(code);
       setActivity(prev => [{
         id: Date.now(),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -76,7 +92,7 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
         name: errorMsg,
         details: null
       }, ...prev].slice(0, 20));
-      playBeep(400, 500);
+      playBeep(150, 600);
     }
   };
 
@@ -177,8 +193,22 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
             </form>
 
             {scanResult && (
-              <div className="v-result-overlay" onClick={clearResult}>
-                <div className={`v-result ${statusClass}`} onClick={e => e.stopPropagation()}>
+              <div className="v-result-overlay">
+                <div className={`v-result ${statusClass}`}>
+                  <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', zIndex: 10 }}>
+                    <span style={{ 
+                      fontSize: '0.65rem', 
+                      fontWeight: 800, 
+                      padding: '4px 10px', 
+                      background: 'rgba(255,255,255,0.25)', 
+                      borderRadius: '6px',
+                      textTransform: 'uppercase',
+                      color: '#fff',
+                      letterSpacing: '0.05em'
+                    }}>
+                      {userDetails?.isMember ? 'Tssia Member' : 'Everyone'}
+                    </span>
+                  </div>
                   <i className={`fas ${statusIcon} v-result__icon`}></i>
                   <div className="v-result__title">{statusLabel}</div>
 
@@ -204,15 +234,11 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
                         <span className="v-result-cell__label">Mobile</span>
                         <span className="v-result-cell__value">{userDetails.mobile}</span>
                       </div>
-                      <div className="v-result-cell v-result-cell--full">
-                        <span className="v-result-cell__label">Email</span>
-                        <span className="v-result-cell__value">{userDetails.email}</span>
-                      </div>
                     </div>
                   ) : (
                     <div className="v-result-cell v-result-cell--full" style={{ marginBottom: '2rem', textAlign: 'center', background: 'rgba(255,255,255,0.1)' }}>
                       <span className="v-result-cell__label" style={{ color: 'rgba(255,255,255,0.7)' }}>Message</span>
-                      <span className="v-result-cell__value" style={{ fontSize: '1.2rem' }}>{scanResult}</span>
+                      <span className="v-result-cell__value" style={{ fontSize: '1.2rem', wordBreak: 'break-all' }}>{scanResult}</span>
                     </div>
                   )}
 
@@ -249,10 +275,6 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
                 <div className="v-card__meta">
                   <i className="fas fa-map-marker-alt"></i>
                   {selectedEvent.location}
-                </div>
-                <div className="v-card__meta">
-                  <i className="fas fa-user-check"></i>
-                  {activity.length} verified today
                 </div>
               </div>
             </div>
@@ -328,15 +350,6 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
                             <span className={`v-activity-badge v-activity-badge--${item.status === 'valid' ? 'valid' : item.status === 'duplicate' ? 'dup' : 'invalid'}`}>
                               {item.status}
                             </span>
-                            {item.details && (
-                              <button 
-                                className="v-btn--icon" 
-                                onClick={() => handleEditScan(item)}
-                                title="Edit details"
-                              >
-                                <i className="fas fa-edit"></i>
-                              </button>
-                            )}
                           </div>
                         </>
                       )}

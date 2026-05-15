@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import RegistrationFormBuilder from "./RegistrationFormBuilder";
 import SuccessPageBuilder from "./SuccessPageBuilder";
 import api from "../../api/api";
@@ -62,6 +64,23 @@ function EventCreate() {
   const [showingDraft, setShowingDraft] = useState(false);
   const [publishedFromDraft, setPublishedFromDraft] = useState(false);
 
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet',
+    'link'
+  ];
+
   const steps = [
     { id: "event-details", label: "Event Details" },
     { id: "registration-form", label: "Registration Form" },
@@ -87,6 +106,19 @@ function EventCreate() {
 
     checkForDraft();
   }, []);
+
+  // Update registration fields requirement based on event category
+  useEffect(() => {
+    if (formData.eventFor === 'tssia_members') {
+      setRegistrationFields(prev => prev.map(field => 
+        field.id === 'membership_number' ? { ...field, required: true } : field
+      ));
+    } else {
+      setRegistrationFields(prev => prev.map(field => 
+        field.id === 'membership_number' ? { ...field, required: false } : field
+      ));
+    }
+  }, [formData.eventFor]);
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
@@ -813,19 +845,23 @@ function EventCreate() {
                   {errors.title && <div className="field-error">{errors.title}</div>}
                 </div>
 
-                <div className="form-group">
+                <div className="form-group quill-editor-group">
                   <label htmlFor="description" className="form-label">
                     Description
                   </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows="4"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className={`textarea-field ${errors.description ? "input-error" : ""}`}
-                    placeholder="Describe the event purpose and expected outcomes"
-                  />
+                  <div className={`quill-wrapper ${errors.description ? "quill-error" : ""}`}>
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.description}
+                      onChange={(content) => {
+                        setFormData(prev => ({ ...prev, description: content }));
+                        if (errors.description) setErrors(prev => ({ ...prev, description: "" }));
+                      }}
+                      modules={modules}
+                      formats={formats}
+                      placeholder="Describe the event purpose and expected outcomes..."
+                    />
+                  </div>
                   {errors.description && <div className="field-error">{errors.description}</div>}
                 </div>
 
@@ -1319,9 +1355,9 @@ function EventCreate() {
               {!createdEventId && (
                 <>
                   <SuccessPageBuilder
+                    initialConfig={successPageConfig}
                     onSave={(config) => {
                       setSuccessPageConfig(config);
-                      setStatus({ type: "success", message: "Success page configuration saved successfully!" });
                     }}
                   />
                   <div className="success-action-row">
@@ -1612,6 +1648,35 @@ function EventCreate() {
           display: flex;
           justify-content: flex-end;
           margin-top: 1.5rem;
+        }
+        .quill-wrapper {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
+          background: white;
+          transition: border-color 0.2s;
+        }
+
+        .quill-wrapper:focus-within {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .quill-wrapper.quill-error {
+          border-color: #ef4444;
+        }
+
+        .ql-toolbar.ql-snow {
+          border: none !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          background: #f8fafc;
+        }
+
+        .ql-container.ql-snow {
+          border: none !important;
+          min-height: 200px;
+          font-family: inherit;
+          font-size: 1rem;
         }
       `}</style>
     </div>

@@ -37,6 +37,7 @@ function App() {
           <Route path="tickets" element={<TicketPage />} />
           <Route path="verifiers" element={<Verifiers />} />
           <Route path="reports" element={<Report />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function SuccessPageBuilder({ onSave }) {
+export default function SuccessPageBuilder({ onSave, initialConfig }) {
   const [successConfig, setSuccessConfig] = useState({
-    title: "Registration Successful!",
-    message: "Thank you for registering for our event. We look forward to seeing you there!",
-    displayFields: ["participant_name", "email", "mobile_number"],
+    title: initialConfig?.title || "Registration Successful!",
+    message: initialConfig?.message || "Thank you for registering for our event. We look forward to seeing you there!",
+    displayFields: initialConfig?.displayFields || ["participant_name", "email", "mobile_number"],
   });
+
+  useEffect(() => {
+    onSave(successConfig);
+  }, [successConfig, onSave]);
 
   const availableFields = [
     { value: "participant_name", label: "Participant Name" },
@@ -15,6 +19,8 @@ export default function SuccessPageBuilder({ onSave }) {
     { value: "mobile_number", label: "Mobile Number" },
     { value: "gst_number", label: "GST Number" },
     { value: "membership_number", label: "Membership Number" },
+    { value: "event_name", label: "Event Name" },
+    { value: "event_date_time", label: "Event Date & Time" },
   ];
 
   const handleFieldChange = (field, value) => {

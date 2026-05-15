@@ -114,12 +114,12 @@ export const api = {
 
   // Ticket Management
   getTicket: (ticketId) => apiCall(`/tickets/${ticketId}`),
-  getEventTickets: (eventId, page = 1, pageSize = 10, sortBy = 'created_at', sortOrder = 'desc') => 
-    apiCall(`/tickets/event/${eventId}?page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortOrder=${sortOrder}`),
+  getEventTickets: (eventId, page = 1, pageSize = 10, sortBy = 'created_at', sortOrder = 'desc', search = '') => 
+    apiCall(`/tickets/event/${eventId}?page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortOrder=${sortOrder}&search=${search}`),
   getRegistrationTicket: (registrationId) => 
     apiCall(`/tickets/registration/${registrationId}`),
-  getAllTickets: (page = 1, pageSize = 10, sortBy = 'created_at', sortOrder = 'desc') => 
-    apiCall(`/tickets?page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortOrder=${sortOrder}`),
+  getAllTickets: (page = 1, pageSize = 10, sortBy = 'created_at', sortOrder = 'desc', search = '') => 
+    apiCall(`/tickets?page=${page}&pageSize=${pageSize}&sortBy=${sortBy}&sortOrder=${sortOrder}&search=${search}`),
   markTicketDownloaded: (ticketId) => 
     apiCall(`/tickets/${ticketId}/downloaded`, { method: 'PATCH' }),
   markTicketPrinted: (ticketId) => 

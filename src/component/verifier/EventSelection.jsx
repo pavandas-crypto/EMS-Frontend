@@ -10,47 +10,84 @@ const EventSelection = ({ events = [], onEventSelect, onLogout, userRole, onRefr
     ? 'Create events in the admin panel or refresh the page.'
     : 'Please contact administrator to assign events.';
 
-  // Check if event is within 2 hours of start time
-  const isVerificationEnabled = (eventDateTime) => {
-    if (!eventDateTime) return false;
-    const eventTime = new Date(eventDateTime).getTime();
+  // Check if verification is allowed
+  const isVerificationEnabled = (event) => {
+    if (!event || !event.start_date_time) return false;
+    
+    const startTime = new Date(event.start_date_time).getTime();
+    const endTimeRaw = event.end_date_time ? new Date(event.end_date_time) : new Date(startTime + (24 * 60 * 60 * 1000));
+    
+    // Allow until end of day
+    const endOfDay = new Date(endTimeRaw);
+    endOfDay.setHours(23, 59, 59, 999);
+    const endTime = endOfDay.getTime();
+    
     const currentTime = new Date().getTime();
     const twoHoursInMs = 2 * 60 * 60 * 1000;
-    const timeUntilEvent = eventTime - currentTime;
     
-    // Enable if event is within 2 hours from now (and hasn't started yet)
-    return timeUntilEvent <= twoHoursInMs && timeUntilEvent > 0;
+    return (currentTime >= startTime - twoHoursInMs) && (currentTime <= endTime);
   };
 
-  // Get time remaining until verification can start
-  const getTimeUntilEnabled = (eventDateTime) => {
-    if (!eventDateTime) return '';
-    const eventTime = new Date(eventDateTime).getTime();
+  // Get status text for verification button
+  const getVerificationStatus = (event) => {
+    if (!event || !event.start_date_time) return { label: 'Verification Disabled', color: '#666' };
+    
+    const startTime = new Date(event.start_date_time).getTime();
+    const endTime = event.end_date_time ? new Date(event.end_date_time).getTime() : startTime + (24 * 60 * 60 * 1000);
     const currentTime = new Date().getTime();
-    const timeUntilEvent = eventTime - currentTime;
-    
-    if (timeUntilEvent <= 0) return 'Event has started';
-    
-    const hoursRemaining = Math.floor(timeUntilEvent / (60 * 60 * 1000));
-    const minutesRemaining = Math.floor((timeUntilEvent % (60 * 60 * 1000)) / (60 * 1000));
-    
-    if (hoursRemaining > 0) {
-      return `Enabled in ${hoursRemaining}h ${minutesRemaining}m`;
+    const twoHoursInMs = 2 * 60 * 60 * 1000;
+
+    if (currentTime < startTime - twoHoursInMs) {
+      // Too early
+      const timeUntil = startTime - currentTime;
+      const hours = Math.floor(timeUntil / (3600000));
+      const minutes = Math.floor((timeUntil % 3600000) / 60000);
+      return { 
+        label: hours > 0 ? `Starts in ${hours}h ${minutes}m` : `Starts in ${minutes}m`, 
+        color: '#f59e0b',
+        enabled: false
+      };
+    } else if (currentTime >= startTime && currentTime <= endTime) {
+      // In progress
+      return { label: 'Verify Attendees →', color: '#10b981', enabled: true };
+    } else if (currentTime >= startTime - twoHoursInMs && currentTime < startTime) {
+      // Within window but not started
+      return { label: 'Start Early Verification →', color: '#3b82f6', enabled: true };
+    } else {
+      // Ended - but allow if same day
+      const endOfDay = new Date(endTime);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      if (currentTime <= endOfDay.getTime()) {
+        return { label: 'Finalize Verification →', color: '#6366f1', enabled: true };
+      }
+      return { label: 'Event Ended', color: '#ef4444', enabled: false };
     }
-    return `Enabled in ${minutesRemaining}m`;
   };
 
-  // Check if event has ended
-  const hasEventEnded = (event) => {
-    const endTime = event.end_date_time || event.start_date_time;
-    if (!endTime) return false;
-    const endTimestamp = new Date(endTime).getTime();
-    const currentTime = new Date().getTime();
-    return endTimestamp < currentTime;
-  };
-
-  // Filter out ended events
-  const upcomingEvents = events.filter(event => !hasEventEnded(event));
+  // Sort events: In Progress first, then Upcoming, then Past
+  const sortedEvents = [...events].sort((a, b) => {
+    const now = new Date().getTime();
+    const startA = new Date(a.start_date_time).getTime();
+    const startB = new Date(b.start_date_time).getTime();
+    
+    // Check if in progress
+    const inProgressA = now >= startA && (!a.end_date_time || now <= new Date(a.end_date_time).getTime());
+    const inProgressB = now >= startB && (!b.end_date_time || now <= new Date(b.end_date_time).getTime());
+    
+    if (inProgressA && !inProgressB) return -1;
+    if (!inProgressA && inProgressB) return 1;
+    
+    // Check if upcoming
+    const upcomingA = now < startA;
+    const upcomingB = now < startB;
+    
+    if (upcomingA && !upcomingB) return -1;
+    if (!upcomingA && upcomingB) return 1;
+    
+    // Otherwise sort by start time descending
+    return startB - startA;
+  });
 
   return (
     <div className="v-page">
@@ -83,29 +120,35 @@ const EventSelection = ({ events = [], onEventSelect, onLogout, userRole, onRefr
 
         {/* 3-column card grid */}
         <div className="v-event-grid">
-          {upcomingEvents.length === 0 ? (
+          {sortedEvents.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: '#f9f9f9', borderRadius: 16 }}>
               <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>{emptyMessage}</div>
               <p style={{ color: '#999', marginTop: '0.5rem' }}>{emptyHint}</p>
             </div>
           ) : (
-            upcomingEvents.map(event => {
+            sortedEvents.map(event => {
               const eventId = event.event_id || event.id;
               const registrationCount = event.total_registrations ?? event.attendee_count ?? event.registration_count ?? 0;
+              const status = getVerificationStatus(event);
+              
               return (
-                <div key={eventId} className="v-card v-card--hover" onClick={() => onEventSelect({
-                  id: eventId,
-                  name: event.event_name || event.name || 'Untitled Event',
-                  date: event.start_date_time || event.startDate || 'Check calendar',
-                  location: event.address || event.location || 'Event Location',
-                  attendees: registrationCount,
-                  status: 'active',
-                  description: event.description || 'Event verification portal'
-                })}>
+                <div key={eventId} className="v-card v-card--hover" onClick={() => {
+                  if (status.enabled) {
+                    onEventSelect({
+                      id: eventId,
+                      name: event.event_name || event.name || 'Untitled Event',
+                      date: event.start_date_time || event.startDate || 'Check calendar',
+                      location: event.address || event.location || 'Event Location',
+                      attendees: registrationCount,
+                      status: 'active',
+                      description: event.description || 'Event verification portal'
+                    });
+                  }
+                }}>
                   {/* Top row */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                    <span className="v-badge v-badge--active">
-                      {badgeLabel}
+                    <span className={`v-badge ${status.enabled ? 'v-badge--active' : 'v-badge--inactive'}`}>
+                      {status.enabled ? 'Available' : 'Restricted'}
                     </span>
                     <span className="v-chip">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
@@ -139,10 +182,10 @@ const EventSelection = ({ events = [], onEventSelect, onLogout, userRole, onRefr
                   <div>
                     <button 
                       className="v-btn" 
-                      disabled={!isVerificationEnabled(event.start_date_time)}
+                      disabled={!status.enabled}
                       onClick={e => {
                         e.stopPropagation();
-                        if (isVerificationEnabled(event.start_date_time)) {
+                        if (status.enabled) {
                           onEventSelect({
                             id: eventId,
                             name: event.event_name || event.name || 'Untitled Event',
@@ -153,22 +196,15 @@ const EventSelection = ({ events = [], onEventSelect, onLogout, userRole, onRefr
                         }
                       }}
                       style={{
-                        opacity: isVerificationEnabled(event.start_date_time) ? 1 : 0.5,
-                        cursor: isVerificationEnabled(event.start_date_time) ? 'pointer' : 'not-allowed'
+                        background: status.color,
+                        opacity: status.enabled ? 1 : 0.6,
+                        cursor: status.enabled ? 'pointer' : 'not-allowed',
+                        border: 'none',
+                        color: 'white'
                       }}
                     >
-                      Verify Attendees →
+                      {status.label}
                     </button>
-                    {!isVerificationEnabled(event.start_date_time) && (
-                      <p style={{
-                        fontSize: '0.75rem',
-                        color: '#ff9800',
-                        marginTop: '0.5rem',
-                        textAlign: 'center'
-                      }}>
-                        {getTimeUntilEnabled(event.start_date_time)}
-                      </p>
-                    )}
                   </div>
                 </div>
               );

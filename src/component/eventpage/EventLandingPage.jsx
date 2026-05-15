@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../api/api";
+import NotFound from "../NotFound";
+import 'react-quill-new/dist/quill.snow.css';
 import "./eventlanding.css";
 
 function EventLandingPage() {
@@ -8,12 +10,13 @@ function EventLandingPage() {
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showCopyNotification, setShowCopyNotification] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
       try {
         const response = await api.getEvent(eventId);
-        if (response.success) {
+        if (response.success && response.data) {
           const eventData = response.data;
           setEvent({
             id: eventData.event_id,
@@ -59,13 +62,7 @@ function EventLandingPage() {
   }
 
   if (!event) {
-    return (
-      <div className="event-landing-error">
-        <h1>404</h1>
-        <p>The event you are looking for has vanished into the cosmos.</p>
-        <button onClick={() => navigate("/")}>Go Home</button>
-      </div>
-    );
+    return <NotFound />;
   }
 
   // Format date and time
@@ -87,22 +84,104 @@ function EventLandingPage() {
     });
   };
 
+
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShowCopyNotification(true);
+      setTimeout(() => setShowCopyNotification(false), 3000);
+
+      // Optional: still try native share if available for mobile convenience
+      if (navigator.share) {
         await navigator.share({
           title: event.title,
           text: event.description,
           url: window.location.href,
-        });
-      } catch (err) {
-        console.error("Share failed:", err);
+        }).catch(() => { }); // Ignore user cancellation
       }
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      navigator.clipboard.writeText(window.location.href);
-      alert("Link copied to clipboard!");
+    } catch (err) {
+      console.error("Action failed:", err);
     }
+  };
+
+  const Countdown = ({ targetDate, compact }) => {
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false });
+
+    useEffect(() => {
+      const timer = setInterval(() => {
+        const now = new Date().getTime();
+        const distance = new Date(targetDate).getTime() - now;
+
+        if (distance < 0) {
+          clearInterval(timer);
+          setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
+        } else {
+          setTimeLeft({
+            days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+            minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+            seconds: Math.floor((distance % (1000 * 60)) / 1000),
+            isPast: false
+          });
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }, [targetDate]);
+
+    if (timeLeft.isPast) {
+      return (
+        <div className={`event-countdown-container started ${compact ? 'compact' : ''}`}>
+          <div className="countdown-label live">
+            EVENT HAS STARTED
+          </div>
+          {!compact && <div className="countdown-status">Join us now for the live experience!</div>}
+        </div>
+      );
+    }
+
+    if (compact) {
+      return (
+        <div className="event-countdown-container compact">
+          <div className="countdown-grid compact">
+            <span>{String(timeLeft.days).padStart(2, '0')}d</span>
+            <span>:</span>
+            <span>{String(timeLeft.hours).padStart(2, '0')}h</span>
+            <span>:</span>
+            <span>{String(timeLeft.minutes).padStart(2, '0')}m</span>
+            <span>:</span>
+            <span>{String(timeLeft.seconds).padStart(2, '0')}s</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="event-countdown-container">
+        <div className="countdown-label">EVENT STARTS IN</div>
+        <div className="countdown-grid">
+          <div className="countdown-item">
+            <span className="count-num">{String(timeLeft.days).padStart(2, '0')}</span>
+            <span className="count-label">DAYS</span>
+          </div>
+          <div className="countdown-divider">:</div>
+          <div className="countdown-item">
+            <span className="count-num">{String(timeLeft.hours).padStart(2, '0')}</span>
+            <span className="count-label">HOURS</span>
+          </div>
+          <div className="countdown-divider">:</div>
+          <div className="countdown-item">
+            <span className="count-num">{String(timeLeft.minutes).padStart(2, '0')}</span>
+            <span className="count-label">MINUTES</span>
+          </div>
+          <div className="countdown-divider">:</div>
+          <div className="countdown-item">
+            <span className="count-num">{String(timeLeft.seconds).padStart(2, '0')}</span>
+            <span className="count-label">SECONDS</span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -110,19 +189,21 @@ function EventLandingPage() {
       {/* Navigation Header */}
       <nav className="event-nav">
         <div className="nav-container">
-          <div className="nav-logo">
-            <div className="logo-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-              </svg>
-            </div>
-            <div className="logo-text">
-              <span className="logo-brand">TSSIA</span>
-              <span className="logo-sub">Event Hub</span>
-            </div>
+          <div className="nav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
+            <img
+              src="/images/tssia logo.png"
+              alt="TSSIA Logo"
+              className="nav-logo-img"
+            />
+          </div>
+
+          <div className="nav-center-status">
+            <Countdown targetDate={event.startDate} compact={true} />
           </div>
 
           <div className="nav-actions">
+
+            {/* Desktop Membership Button */}
             <a
               href="https://tssia.org/become-a-member"
               target="_blank"
@@ -137,18 +218,7 @@ function EventLandingPage() {
               <span>Become a Member</span>
             </a>
 
-            {/* Mobile-only membership icon */}
-            <a
-              href="https://tssia.org/become-a-member"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nav-member-icon-mobile"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </a>
+
           </div>
         </div>
       </nav>
@@ -163,12 +233,19 @@ function EventLandingPage() {
 
       {/* Content Section */}
       <main className="event-main-container">
-        <div className="event-header-info">
-          <span className="event-category-tag">{event.category}</span>
-          <h1 className="event-main-title">{event.title}</h1>
-          <div className="title-underline"></div>
-          <p className="event-main-description">{event.description}</p>
+        <div className="event-title-countdown-wrapper">
+          <div className="title-section">
+            <span className="event-category-tag">{event.category}</span>
+            <h1 className="event-main-title">{event.title}</h1>
+            <div className="title-underline"></div>
+          </div>
+          <Countdown targetDate={event.startDate} />
         </div>
+        <div
+          className="event-main-description ql-editor"
+          dangerouslySetInnerHTML={{ __html: event.description }}
+          style={{ padding: 0, height: 'auto', overflow: 'visible' }}
+        />
 
         {/* Quick Details Grid */}
         <div className="event-quick-details">
@@ -197,8 +274,8 @@ function EventLandingPage() {
             </div>
             <div className="detail-box-content">
               <span className="detail-box-label">LOCATION</span>
-              <span className="detail-box-value">{event.location.split(',')[0]}</span>
-              <span className="detail-box-sub">{event.location.split(',').slice(1).join(',')}</span>
+              <span className="detail-box-value">{(event.location || 'TBD').split(',')[0]}</span>
+              <span className="detail-box-sub">{(event.location || '').split(',').slice(1).join(',')}</span>
             </div>
           </div>
 
@@ -311,15 +388,11 @@ function EventLandingPage() {
         <div className="footer-container">
           <div className="footer-left">
             <div className="footer-logo">
-              <div className="logo-icon footer-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <div className="logo-text">
-                <span className="logo-brand">TSSIA</span>
-                <span className="logo-sub">Event Hub</span>
-              </div>
+              <img
+                src="/images/tssia logo.png"
+                alt="TSSIA Logo"
+                style={{ height: '60px', width: 'auto', filter: 'brightness(0) invert(1)' }}
+              />
             </div>
           </div>
 
@@ -333,6 +406,11 @@ function EventLandingPage() {
               <div className="social-icons">
                 <a href="#" className="social-link" aria-label="Facebook">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
+                </a>
+                <a href="https://tssia.org/contact-us" target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Contact Us">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                  </svg>
                 </a>
                 <a href="#" className="social-link" aria-label="Instagram">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" /></svg>
@@ -372,6 +450,35 @@ function EventLandingPage() {
           </svg>
         </button>
       </div>
+
+      {/* Sticky Mobile Footer */}
+      <div className="mobile-sticky-footer">
+        <button className="btn-register-primary" onClick={handleRegister}>
+          Register Now
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
+        <button className="btn-share-icon" onClick={handleShare} title="Share Event">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        </button>
+      </div>
+
+      {showCopyNotification && (
+        <div className="share-copy-toast">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: 10 }}>
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          Event Link Copied!
+        </div>
+      )}
     </div>
   );
 }

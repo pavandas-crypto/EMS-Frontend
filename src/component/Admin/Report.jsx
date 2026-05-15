@@ -74,7 +74,8 @@ export default function Report() {
             designation: r.designation || "N/A",
             membership: r.tssia_membership_id ? "Member" : "Non-Member",
             event: r.event_name,
-            qrPass: `PASS-${r.registration_id}`, 
+            qrPass: r.pass_number || "Pending", 
+            qrCode: r.qr_code || "",
             status: r.status_name.toLowerCase(),
             verifiedBy: r.verified_by_name || "", 
             registeredAt: r.created_at,
@@ -191,7 +192,7 @@ export default function Report() {
       exportCSV(sorted.map(({ id, ...r }) => ({
         Name: r.name, Email: r.email, Phone: r.phone, Company: r.company,
         Designation: r.designation, Membership: r.membership, Event: r.event,
-        "QR Pass": r.qrPass, Status: r.status,
+        "Pass Number": r.qrPass, "QR Code": r.qrCode, Status: r.status,
         "Verified By": r.verifiedBy, "Registered At": r.registeredAt, "Attended At": r.attendedAt,
       })), `participants_${eventFilter}_${new Date().toISOString().slice(0,10)}.csv`);
     } else if (tab === "company") {
@@ -201,7 +202,7 @@ export default function Report() {
     } else {
       exportCSV(memberDetails.map(({ id, ...r }) => ({
         Name: r.name, Email: r.email, Phone: r.phone, Company: r.company,
-        "Membership ID": r.qrPass, Status: r.status,
+        "Pass Number": r.qrPass, "QR Code": r.qrCode, Status: r.status,
       })), `member_wise_${new Date().toISOString().slice(0,10)}.csv`);
     }
   };
@@ -367,7 +368,6 @@ export default function Report() {
                       <td className="rp-td-num">{(page - 1) * pageSize + i + 1}</td>
                       <td>
                         <div className="rp-person">
-                          <div className="rp-avatar">{p.name.split(" ").map((n) => n[0]).join("").slice(0,2)}</div>
                           <div>
                             <div className="rp-name">{p.name}</div>
                             <div className="rp-email">{p.email}</div>
@@ -507,7 +507,7 @@ export default function Report() {
                       <td className="rp-td-num">{i + 1}</td>
                       <td>
                         <div className="rp-person">
-                          <div className="rp-avatar">{p.name.split(" ").map((n) => n[0]).join("").slice(0,2)}</div>
+
                           <div>
                             <div className="rp-name">{p.name}</div>
                             <div className="rp-email">{p.phone || "—"}</div>
@@ -562,7 +562,7 @@ export default function Report() {
                       <td className="rp-td-num">{(memberPage - 1) * pageSize + i + 1}</td>
                       <td>
                         <div className="rp-person">
-                          <div className="rp-avatar">{p.name.split(" ").map((n) => n[0]).join("").slice(0,2)}</div>
+
                           <div>
                             <div className="rp-name">{p.name}</div>
                             <div className="rp-email">{p.phone || "—"}</div>

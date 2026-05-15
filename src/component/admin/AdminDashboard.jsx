@@ -12,6 +12,7 @@ function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [deleteInProgress, setDeleteInProgress] = useState(false);
+  const [copiedEventId, setCopiedEventId] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [sortColumn, setSortColumn] = useState("start_date_time");
@@ -67,6 +68,13 @@ function AdminDashboard() {
     } finally {
       setDeleteInProgress(false);
     }
+  };
+
+  const handleCopyLink = (eventId) => {
+    const url = `${window.location.origin}/event/${eventId}`;
+    navigator.clipboard.writeText(url);
+    setCopiedEventId(eventId);
+    setTimeout(() => setCopiedEventId(null), 3000);
   };
   
   const filteredEvents = events.filter(event => {
@@ -318,6 +326,13 @@ function AdminDashboard() {
                               <Link to={`/event/${event.event_id}`} className="ems-action-btn" title="Preview" target="_blank">
                                 <i className="bi bi-eye"></i>
                               </Link>
+                              <button 
+                                className="ems-action-btn" 
+                                title="Copy Share Link"
+                                onClick={() => handleCopyLink(event.event_id)}
+                              >
+                                <i className={`bi ${copiedEventId === event.event_id ? 'bi-check-lg text-success' : 'bi-share'}`}></i>
+                              </button>
                               <Link to={`/admin/tickets?event_id=${event.event_id}`} className="ems-action-btn" title="Tickets">
                                 <i className="bi bi-ticket"></i>
                               </Link>
@@ -368,7 +383,35 @@ function AdminDashboard() {
         )}
       </div>
 
+      {copiedEventId && (
+        <div className="ems-copy-toast">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: 10 }}>
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          Event Link Copied!
+        </div>
+      )}
+
       <style>{`
+        .ems-copy-toast {
+          position: fixed;
+          bottom: 30px;
+          right: 30px;
+          background: #0f172a;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 12px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+          animation: slideUp 0.3s ease-out;
+          z-index: 9999;
+        }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
         .ems-table-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05); overflow: hidden; }
         .ems-table-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid #f0f0f0; flex-wrap: wrap; gap: 16px; }
         .ems-table-title { font-size: 15px; font-weight: 700; color: #1a202c; margin: 0; }

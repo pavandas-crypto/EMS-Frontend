@@ -11,11 +11,13 @@ function VerifierApp() {
   const [userRole, setUserRole] = useState('verifier');
 
   useEffect(() => {
-    const role = localStorage.getItem('userRole') || 'verifier';
+    const role = (localStorage.getItem('userRole') || 'verifier').toLowerCase();
     setUserRole(role);
 
     const loadEvents = async () => {
       setLoading(true);
+      console.log(`[VerifierApp] Loading assigned events for role: ${role}`);
+      
       if (role === 'admin') {
         try {
           const response = await api.getEvents(1, 100);
@@ -25,19 +27,21 @@ function VerifierApp() {
             setAssignedEvents([]);
           }
         } catch (error) {
-          console.error('Error fetching events for admin:', error);
+          console.error('[VerifierApp] Error fetching events for admin:', error);
           setAssignedEvents([]);
         } finally {
           setLoading(false);
         }
       } else {
         try {
-          // First, try to fetch assigned events via dedicated endpoint
+          // Always fetch assigned events from database via dedicated endpoint
           const assignedResponse = await api.getAssignedEvents();
           if (assignedResponse.success) {
+            console.log('[VerifierApp] Successfully fetched assigned events from DB');
             setAssignedEvents(assignedResponse.data || []);
           } else {
             // Fallback to profile endpoint if dedicated endpoint fails
+            console.warn('[VerifierApp] Assigned events endpoint returned success:false, trying profile fallback');
             const profile = await api.getProfile();
             if (profile.success) {
               setAssignedEvents(profile.data?.assigned_events || []);
@@ -46,7 +50,7 @@ function VerifierApp() {
             }
           }
         } catch (error) {
-          console.error('Error fetching verifier events:', error);
+          console.error('[VerifierApp] Error fetching verifier events from DB:', error);
           // Fallback to profile endpoint
           try {
             const profile = await api.getProfile();
@@ -54,11 +58,12 @@ function VerifierApp() {
               setAssignedEvents(profile.data?.assigned_events || []);
             }
           } catch (profileError) {
-            console.error('Error fetching profile:', profileError);
+            console.error('[VerifierApp] Error fetching profile fallback:', profileError);
             setAssignedEvents([]);
           }
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       }
     };
 

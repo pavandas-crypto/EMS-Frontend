@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import RegistrationFormBuilder from "./RegistrationFormBuilder";
 import SuccessPageBuilder from "./SuccessPageBuilder";
 import api from "../../api/api";
@@ -7,6 +9,23 @@ import { useParams, useNavigate } from "react-router-dom";
 function EventEdit() {
   const { eventId } = useParams();
   const navigate = useNavigate();
+
+  const modules = {
+    toolbar: [
+      [{ 'header': [1, 2, false] }],
+      ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const formats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike', 'blockquote',
+    'list', 'bullet',
+    'link'
+  ];
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -56,71 +75,126 @@ function EventEdit() {
   const [isDraft, setIsDraft] = useState(false);
   const [publishedEventId, setPublishedEventId] = useState(null);
 
+  const steps = [
+    { id: "event-details", label: "Event Details" },
+    { id: "registration-form", label: "Registration Form" },
+    { id: "success-page", label: "Success Page" }
+  ];
+
+  const currentStepIndex = steps.findIndex(step => step.id === activeTab);
+
   useEffect(() => {
     const fetchEventData = async () => {
       try {
         setLoading(true);
         const response = await api.getEvent(eventId);
-        if (response.success) {
-          const e = response.data;
-          
-          // Parse start date and time
-          const startDT = new Date(e.start_date_time);
-          const endDT = new Date(e.end_date_time);
-          
-          const formatTime = (date) => {
-            let hours = date.getHours();
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const period = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12 || 12;
-            return {
-              time: `${hours.toString().padStart(2, '0')}:${minutes}`,
-              period
-            };
+        
+        if (!response.success) {
+          setStatus({ type: "error", message: "Failed to load event: " + (response.message || "Unknown error") });
+          setLoading(false);
+          return;
+        }
+        
+        const e = response.data;
+        
+        if (!e || !e.event_id) {
+          setStatus({ type: "error", message: "Event not found." });
+          setLoading(false);
+          return;
+        }
+        
+        // Validate date fields
+        if (!e.start_date_time || !e.end_date_time) {
+          setStatus({ type: "error", message: "Event is missing date information." });
+          setLoading(false);
+          return;
+        }
+        
+        // Parse start date and time
+        const startDT = new Date(e.start_date_time);
+        const endDT = new Date(e.end_date_time);
+        
+        // Check if dates are valid
+        if (isNaN(startDT.getTime()) || isNaN(endDT.getTime())) {
+          setStatus({ type: "error", message: "Event has invalid date format." });
+          setLoading(false);
+          return;
+        }
+        
+        const formatTime = (date) => {
+          let hours = date.getHours();
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          const period = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12 || 12;
+          return {
+            time: `${hours.toString().padStart(2, '0')}:${minutes}`,
+            period
           };
+        };
 
-          const startT = formatTime(startDT);
-          const endT = formatTime(endDT);
-
-          setFormData({
-            title: e.event_name,
-            description: e.description,
-            startDate: startDT.toISOString().split('T')[0],
-            startTime: startT.time,
-            startPeriod: startT.period,
-            endDate: endDT.toISOString().split('T')[0],
-            endTime: endT.time,
-            endPeriod: endT.period,
-            location: e.address,
-            category: e.category || "EVENT",
-            eventFor: e.event_for || "all",
-            capacity: e.capacity || "",
-            entryFee: e.entry_fee || "",
-            additionalInfo: e.additional_info || "",
-          });
-          setOrganizer({
-            name: e.organizer_name || "",
-            email: e.organizer_email || "",
-            phone: e.organizer_phone || "",
-            country: "India",
-            role: e.organizer_role || "Event Organizer",
-            image: "",
-          });
-          setRegistrationFields(e.registration_fields || []);
-          setSuccessPageConfig(e.success_page_config || null);
-          setIsDraft(e.is_draft || false);
-          
-          if (e.image_id) {
-            setEventImage({
-              file: null,
-              preview: e.image_url,
-              imageId: e.image_id,
-              uploading: false,
-            });
+        const startT = formatTime(startDT);
+        const endT = formatTime(endDT);
+        
+        // Parse JSON fields if they come as strings (shouldn't happen, but being defensive)
+        let registrationFieldsData = e.registration_fields || [];
+        if (typeof registrationFieldsData === 'string') {
+          try {
+            registrationFieldsData = JSON.parse(registrationFieldsData);
+          } catch (e) {
+            registrationFieldsData = [];
           }
         }
+        
+        let successPageConfigData = e.success_page_config || null;
+        if (typeof successPageConfigData === 'string') {
+          try {
+            successPageConfigData = JSON.parse(successPageConfigData);
+          } catch (e) {
+            successPageConfigData = null;
+          }
+        }
+
+        setFormData({
+          title: e.event_name || "",
+          description: e.description || "",
+          startDate: startDT.toISOString().split('T')[0],
+          startTime: startT.time,
+          startPeriod: startT.period,
+          endDate: endDT.toISOString().split('T')[0],
+          endTime: endT.time,
+          endPeriod: endT.period,
+          location: e.address || "",
+          category: e.category || "EVENT",
+          eventFor: e.event_for || "all",
+          capacity: e.capacity || "",
+          entryFee: e.entry_fee || "",
+          additionalInfo: e.additional_info || "",
+        });
+        setOrganizer({
+          name: e.organizer_name || "",
+          email: e.organizer_email || "",
+          phone: e.organizer_phone || "",
+          country: "India",
+          role: e.organizer_role || "Event Organizer",
+          image: "",
+        });
+        setRegistrationFields(Array.isArray(registrationFieldsData) ? registrationFieldsData : []);
+        setSuccessPageConfig(successPageConfigData || null);
+        setIsDraft(e.is_draft || false);
+        
+        if (e.image_id && e.image_url) {
+          setEventImage({
+            file: null,
+            preview: e.image_url,
+            imageId: e.image_id,
+            uploading: false,
+          });
+        }
+        
+        setStatus({ type: "", message: "" });
       } catch (error) {
-        setStatus({ type: "error", message: "Failed to load event data." });
+        console.error("Error loading event:", error);
+        setStatus({ type: "error", message: error.message || "Failed to load event data." });
       } finally {
         setLoading(false);
       }
@@ -228,6 +302,18 @@ function EventEdit() {
 
   const handleRemoveImage = () => {
     setEventImage({ file: null, preview: null, imageId: null, uploading: false });
+  };
+
+  const handleNext = () => {
+    if (currentStepIndex < steps.length - 1) {
+      setActiveTab(steps[currentStepIndex + 1].id);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStepIndex > 0) {
+      setActiveTab(steps[currentStepIndex - 1].id);
+    }
   };
 
   const handleUpdateEvent = async () => {
@@ -349,7 +435,48 @@ function EventEdit() {
     }
   };
 
-  if (loading) return <div className="page-shell"><div className="card">Loading event...</div></div>;
+  if (loading) {
+    return (
+      <div className="page-shell">
+        <div className="card">
+          <div style={{ padding: "2rem", textAlign: "center" }}>
+            <p>Loading event...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (status.type === "error" && status.message) {
+    return (
+      <div className="page-shell">
+        <div className="card" style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <div className="card-header panel-header">
+            <div>
+              <p className="panel-label">Event editor</p>
+              <h1 className="page-title">Error Loading Event</h1>
+            </div>
+            <button 
+              onClick={() => window.location.href = "/admin/dashboard"} 
+              className="button button-text"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#666', fontWeight: 600 }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+              </svg>
+              Back to Dashboard
+            </button>
+          </div>
+          <div className="card-body">
+            <div className="alert alert-error">
+              {status.message}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-shell">
@@ -411,19 +538,23 @@ function EventEdit() {
                   {errors.title && <div className="field-error">{errors.title}</div>}
                 </div>
 
-                <div className="form-group">
+                <div className="form-group quill-editor-group">
                   <label htmlFor="description" className="form-label">
                     Description
                   </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows="4"
-                    value={formData.description}
-                    onChange={handleChange}
-                    className={`textarea-field ${errors.description ? "input-error" : ""}`}
-                    placeholder="Describe the event purpose and expected outcomes"
-                  />
+                  <div className={`quill-wrapper ${errors.description ? "quill-error" : ""}`}>
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.description}
+                      onChange={(content) => {
+                        setFormData(prev => ({ ...prev, description: content }));
+                        if (errors.description) setErrors(prev => ({ ...prev, description: "" }));
+                      }}
+                      modules={modules}
+                      formats={formats}
+                      placeholder="Describe the event purpose and expected outcomes..."
+                    />
+                  </div>
                   {errors.description && <div className="field-error">{errors.description}</div>}
                 </div>
 
@@ -894,6 +1025,35 @@ function EventEdit() {
         .ec-tab--active { color: #111827; border-bottom-color: #fbbf24; }
         .ec-footer { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-top: 1px solid #e5e7eb; background: #fff; }
         .form-container { display: flex; flex-direction: column; gap: 1.5rem; }
+        .quill-wrapper {
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
+          background: white;
+          transition: border-color 0.2s;
+        }
+
+        .quill-wrapper:focus-within {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .quill-wrapper.quill-error {
+          border-color: #ef4444;
+        }
+
+        .ql-toolbar.ql-snow {
+          border: none !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          background: #f8fafc;
+        }
+
+        .ql-container.ql-snow {
+          border: none !important;
+          min-height: 200px;
+          font-family: inherit;
+          font-size: 1rem;
+        }
       `}</style>
     </div>
   );
