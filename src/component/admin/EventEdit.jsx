@@ -758,6 +758,12 @@ function EventEdit() {
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                           </svg>
                           <p style={{ margin: "0.5rem 0", fontWeight: "600", color: "#0ea5e9" }}>Click to select an image</p>
+                          <p style={{ margin: "0.5rem 0", fontSize: "0.85rem", color: "#0369a1", fontWeight: "600", background: "#e0f2fe", padding: "8px 12px", borderRadius: "6px", display: "inline-block" }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }}>
+                              <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            Guide: Use <strong>1920 x 1080 px</strong> (16:9 ratio) for a perfect fit.
+                          </p>
                         </div>
                       </label>
                     </div>

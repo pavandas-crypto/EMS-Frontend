@@ -1112,6 +1112,12 @@ function EventCreate() {
                           <p style={{ margin: "0.5rem 0", fontSize: "0.9rem", color: "#64748b" }}>
                             Supported: JPEG, PNG, GIF, WebP (Max 5MB)
                           </p>
+                          <p style={{ margin: "0.5rem 0", fontSize: "0.85rem", color: "#0369a1", fontWeight: "600", background: "#e0f2fe", padding: "8px 12px", borderRadius: "6px", display: "inline-block" }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '6px' }}>
+                              <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            Guide: Use <strong>1920 x 1080 px</strong> (16:9 ratio) for a perfect fit.
+                          </p>
                         </div>
                       </label>
                     </div>

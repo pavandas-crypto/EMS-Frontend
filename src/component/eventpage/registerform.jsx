@@ -13,6 +13,8 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRegex = /^[0-9]{10}$/;
@@ -117,6 +119,7 @@ function RegisterForm() {
 
     setFormData((prev) => ({ ...prev, [name]: finalValue }));
     setStatus({ type: "", message: "" });
+    setShowAlert(false);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
@@ -141,6 +144,13 @@ function RegisterForm() {
 
     if (Object.keys(nextErrors).length > 0) {
       setStatus({ type: "error", message: "Please fix the highlighted fields." });
+      setShowAlert(true);
+      return;
+    }
+
+    if (!agreedToTerms) {
+      setStatus({ type: "error", message: "You must agree to the Terms and Conditions to proceed." });
+      setShowAlert(true);
       return;
     }
 
@@ -165,6 +175,7 @@ function RegisterForm() {
       }
     } catch (error) {
       setStatus({ type: "error", message: error.message || "Registration failed. Please try again." });
+      setShowAlert(true);
     } finally {
       setLoading(false);
     }
@@ -220,12 +231,6 @@ function RegisterForm() {
             <p>Please ensure your <strong>email address</strong> and <strong>phone number</strong> are correct to receive your entry pass QR code.</p>
           </div>
 
-          {status.message && (
-            <div className={`modern-alert ${status.type === 'success' ? 'alert-success' : 'alert-error'}`}>
-              {status.message}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="modern-form">
             <div className="form-grid">
               {registrationFields.map((field) => (
@@ -261,6 +266,19 @@ function RegisterForm() {
               ))}
             </div>
 
+            <div className="terms-container">
+              <input 
+                type="checkbox" 
+                id="terms" 
+                className="terms-checkbox"
+                checked={agreedToTerms} 
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+              />
+              <label htmlFor="terms" className="terms-label">
+                I confirm that I have read, consent and agree to TSSIA's <button type="button" onClick={() => navigate(`/event/${urlEventId}`)} className="terms-link">User Agreement</button> and <button type="button" onClick={() => navigate(`/event/${urlEventId}`)} className="terms-link">Privacy Policy</button>, and I am of legal age.
+              </label>
+            </div>
+
             <button type="submit" className="modern-submit-btn" disabled={loading}>
               {loading ? (
                 <span className="btn-loading">
@@ -276,21 +294,50 @@ function RegisterForm() {
           </form>
 
           <p className="modern-footer-note">
-            By clicking confirm, you agree to the event's terms and privacy policy. 
             A digital pass will be generated instantly upon approval.
           </p>
         </div>
       </div>
 
+      {showAlert && status.message && (
+        <div className="modern-modal-overlay" onClick={() => setShowAlert(false)}>
+          <div className="modern-alert-card" onClick={(e) => e.stopPropagation()}>
+            <div className={`alert-icon ${status.type === 'error' ? 'alert-error-icon' : 'alert-success-icon'}`}>
+              {status.type === 'error' ? (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              ) : (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              )}
+            </div>
+            
+            <div className="alert-content">
+              <h3 className="alert-title">{status.type === 'error' ? 'Attention Required' : 'Success'}</h3>
+              <p className="alert-message">{status.message}</p>
+            </div>
+
+            <button 
+              onClick={() => setShowAlert(false)} 
+              className="alert-close-btn"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {showSuccessPopup && (
         <div className="modern-modal-overlay">
           <div className="modern-success-card">
             <div className="success-processing-icon">
-              <div className="iconic-spinner-outer">
-                <svg className="iconic-spinner" viewBox="0 0 50 50">
-                  <circle className="iconic-spinner-path" cx="25" cy="25" r="20" fill="none" strokeWidth="5"></circle>
-                </svg>
-              </div>
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'stroke 0.4s cubic-bezier(0.65, 0, 0.45, 1) forwards' }}>
+                <polyline points="20 6 9 17 4 12" className="checkmark-check" style={{ strokeDasharray: 48, strokeDashoffset: 48 }}></polyline>
+              </svg>
             </div>
             
             <h2 className="success-title">Confirmation <span>In Progress</span></h2>
@@ -461,6 +508,45 @@ function RegisterForm() {
           font-weight: 500;
         }
 
+        .terms-container {
+          display: flex;
+          gap: 0.75rem;
+          margin: 1.5rem 0 2rem 0;
+          padding: 0.5rem 0;
+          align-items: flex-start;
+          user-select: none;
+        }
+
+        .terms-checkbox {
+          width: 18px;
+          height: 18px;
+          margin-top: 3px;
+          cursor: pointer;
+          accent-color: #2563eb;
+          flex-shrink: 0;
+        }
+
+        .terms-label {
+          font-size: 13.5px;
+          line-height: 1.6;
+          color: #64748b;
+        }
+
+        .terms-link {
+          background: none;
+          border: none;
+          padding: 0;
+          color: #2563eb;
+          font-weight: 600;
+          cursor: pointer;
+          text-decoration: underline;
+          font-size: inherit;
+        }
+
+        .terms-link:hover {
+          color: #1d4ed8;
+        }
+
         .modern-reg-body {
           padding: 3rem;
         }
@@ -482,6 +568,80 @@ function RegisterForm() {
           font-size: 14px;
           line-height: 1.6;
           color: #0c4a6e;
+        }
+
+        .modern-alert-card {
+          background: #ffffff;
+          border-radius: 28px;
+          padding: 2.5rem;
+          width: 100%;
+          max-width: 420px;
+          text-align: center;
+          animation: zoomIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          position: relative;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .alert-icon {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 1.5rem;
+          position: relative;
+        }
+
+        .alert-error-icon {
+          background: #fee2e2;
+          color: #ef4444;
+          box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.2);
+        }
+
+        .alert-success-icon {
+          background: #dcfce7;
+          color: #10b981;
+          box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+        }
+
+        .alert-content {
+          margin-bottom: 2rem;
+        }
+
+        .alert-title {
+          font-size: 24px;
+          font-weight: 800;
+          color: #0f172a;
+          margin-bottom: 0.75rem;
+          letter-spacing: -0.02em;
+        }
+
+        .alert-message {
+          color: #64748b;
+          line-height: 1.6;
+          font-size: 15px;
+          font-weight: 500;
+        }
+
+        .alert-close-btn {
+          width: 100%;
+          background: #0f172a;
+          color: #ffffff;
+          border: none;
+          border-radius: 14px;
+          padding: 1rem;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .alert-close-btn:hover {
+          background: #1e293b;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         .modern-alert {
@@ -593,7 +753,7 @@ function RegisterForm() {
           align-items: center;
           justify-content: center;
           padding: 2rem;
-          z-index: 1000;
+          z-index: 9999;
           animation: fadeIn 0.4s ease;
         }
 

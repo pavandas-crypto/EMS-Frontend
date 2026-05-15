@@ -65,29 +65,27 @@ const EventSelection = ({ events = [], onEventSelect, onLogout, userRole, onRefr
     }
   };
 
-  // Sort events: In Progress first, then Upcoming, then Past
-  const sortedEvents = [...events].sort((a, b) => {
-    const now = new Date().getTime();
-    const startA = new Date(a.start_date_time).getTime();
-    const startB = new Date(b.start_date_time).getTime();
-    
-    // Check if in progress
-    const inProgressA = now >= startA && (!a.end_date_time || now <= new Date(a.end_date_time).getTime());
-    const inProgressB = now >= startB && (!b.end_date_time || now <= new Date(b.end_date_time).getTime());
-    
-    if (inProgressA && !inProgressB) return -1;
-    if (!inProgressA && inProgressB) return 1;
-    
-    // Check if upcoming
-    const upcomingA = now < startA;
-    const upcomingB = now < startB;
-    
-    if (upcomingA && !upcomingB) return -1;
-    if (!upcomingA && upcomingB) return 1;
-    
-    // Otherwise sort by start time descending
-    return startB - startA;
-  });
+  // Sort events: In Progress first, then Upcoming
+  const filteredAndSortedEvents = events
+    .filter(event => {
+      const endTime = event.end_date_time ? new Date(event.end_date_time).getTime() : new Date(event.start_date_time).getTime() + (24 * 60 * 60 * 1000);
+      return new Date().getTime() <= endTime;
+    })
+    .sort((a, b) => {
+      const now = new Date().getTime();
+      const startA = new Date(a.start_date_time).getTime();
+      const startB = new Date(b.start_date_time).getTime();
+      
+      // Check if in progress
+      const inProgressA = now >= startA && (!a.end_date_time || now <= new Date(a.end_date_time).getTime());
+      const inProgressB = now >= startB && (!b.end_date_time || now <= new Date(b.end_date_time).getTime());
+      
+      if (inProgressA && !inProgressB) return -1;
+      if (!inProgressA && inProgressB) return 1;
+      
+      // Otherwise sort by start time descending
+      return startB - startA;
+    });
 
   return (
     <div className="v-page">
@@ -120,13 +118,13 @@ const EventSelection = ({ events = [], onEventSelect, onLogout, userRole, onRefr
 
         {/* 3-column card grid */}
         <div className="v-event-grid">
-          {sortedEvents.length === 0 ? (
+          {filteredAndSortedEvents.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem 2rem', background: '#f9f9f9', borderRadius: 16 }}>
               <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>{emptyMessage}</div>
               <p style={{ color: '#999', marginTop: '0.5rem' }}>{emptyHint}</p>
             </div>
           ) : (
-            sortedEvents.map(event => {
+            filteredAndSortedEvents.map(event => {
               const eventId = event.event_id || event.id;
               const registrationCount = event.total_registrations ?? event.attendee_count ?? event.registration_count ?? 0;
               const status = getVerificationStatus(event);
@@ -157,10 +155,7 @@ const EventSelection = ({ events = [], onEventSelect, onLogout, userRole, onRefr
                   </div>
 
                   {/* Title */}
-                  <h3 className="v-card__title">{event.event_name}</h3>
-
-                  {/* Description */}
-                  <p className="v-card__desc">{event.description || 'Verification access granted for this event.'}</p>
+                  <h3 className="v-card__title" style={{ marginBottom: '1.5rem' }}>{event.event_name}</h3>
 
                   {/* Meta */}
                   <div style={{ marginBottom: '1.5rem' }}>

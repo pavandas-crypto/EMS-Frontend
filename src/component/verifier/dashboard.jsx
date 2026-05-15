@@ -37,6 +37,25 @@ const VerifierDashboard = ({ selectedEvent, onBackToSelection }) => {
     
     lastScanRef.current = { code, time: now };
 
+    // Check if event has ended
+    const endTime = selectedEvent.end_date_time ? new Date(selectedEvent.end_date_time).getTime() : new Date(selectedEvent.start_date_time).getTime() + (24 * 60 * 60 * 1000);
+    if (now > endTime) {
+      setUserStatus('invalid');
+      const errorMsg = 'Event has ended. Scanning disabled.';
+      setUserDetails(null);
+      setScanResult(code);
+      setActivity(prev => [{
+        id: Date.now(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        code,
+        status: 'invalid',
+        name: errorMsg,
+        details: null
+      }, ...prev].slice(0, 20));
+      playBeep(150, 600);
+      return;
+    }
+
     try {
       const response = await api.scanQRCode({ qr_code: code, event_id: selectedEvent.id });
       
